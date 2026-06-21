@@ -105,7 +105,6 @@
             font-style: italic;
         }
 
-        /* Styl checkboxów dla DLC */
         .dlc-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -168,7 +167,6 @@
 
 <div class="container">
     <div class="logo-container">
-        <!-- Ścieżka ustawiona na katalog Design -->
         <img src="Design/AXO.png" alt="AXO Logistyka Logo">
     </div>
     
@@ -188,7 +186,7 @@
 
         <h3>Informacje o sobie</h3>
         
-        <label>Opowiedz compressibility o sobie (kilka zdań):</label>
+        <label>Opowiedz coś o sobie (kilka zdań):</label>
         <textarea name="o_sobie" required placeholder="Napisz parę słów o sobie, zainteresowaniach..."></textarea>
 
         <label>Ile masz godzin w ETS2:</label>
@@ -220,7 +218,7 @@
             <option>Nie</option>
         </select>
 
-        <label>Posiadane mapowe mapowe DLC:</label>
+        <label>Posiadane mapowe DLC:</label>
         <p class="note">Zaznacz wszystkie mapy, które posiadasz na swoim koncie Steam:</p>
         <div class="dlc-container">
             <label class="dlc-item"><input type="checkbox" name="dlc" value="Going East"> Going East!</label>
@@ -232,6 +230,7 @@
             <label class="dlc-item"><input type="checkbox" name="dlc" value="Iberia"> Iberia</label>
             <label class="dlc-item"><input type="checkbox" name="dlc" value="West Balkans"> West Balkans</label>
             <label class="dlc-item"><input type="checkbox" name="dlc" value="Greece"> Greece</label>
+            <label class="dlc-item"><input type="checkbox" name="dlc" value="Nordic Horizons"> Nordic Horizons</label>
         </div>
 
         <label>Czy potrafisz podmienić plik DDS?</label>
@@ -252,7 +251,7 @@
         <h3>Dodatkowo</h3>
         
         <label>Wyślij zdjęcia z gry:</label>
-        <p class="note">Minimalnie 3 zdjęcia, maksymalnie 5 plików graficznych (np. screeny Twoich ciężarówek)</p>
+        <p class="note">Minimalnie 3 zdjęcia</p>
         <input type="file" id="photosInput" multiple accept="image/*" required>
 
         <button type="submit">Wyślij Podanie rekrutacyjne</button>
@@ -274,7 +273,6 @@
         
         const files = document.getElementById('photosInput').files;
         
-        // Weryfikacja minimalnej liczby zdjęć (wymagane min. 3)
         if (files.length < 3) {
             alert('Prosimy o dodanie minimalnie 3 zdjęć z gry!');
             return;
@@ -284,17 +282,15 @@
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
             
-            // Zbieranie zaznaczonych checkboxów z DLC
             const checkedDLCs = [];
             document.querySelectorAll('input[name="dlc"]:checked').forEach(cb => {
                 checkedDLCs.push(cb.value);
             });
             data.dlc_mapowe = checkedDLCs.length > 0 ? checkedDLCs.join(', ') : 'Brak mapowych DLC';
-            delete data.dlc; // usuwamy pojedynczy wpis formularza na rzecz złączonego ciągu tekstowego
+            delete data.dlc;
 
-            // Obsługa zdjęć do formatu Base64
             const encodedPhotos = [];
-            for (let i = 0; i < Math.min(files.length, 5); i++) {
+            for (let i = 0; i < files.length; i++) {
                 encodedPhotos.push(await toBase64(files[i]));
             }
             data.zdjecia = encodedPhotos.join('|');
