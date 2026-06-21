@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Administratora - Rekrutacja</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #fff; margin: 20px; }
+        .login-box { max-width: 400px; margin: 100px auto; background: #222; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px #000; }
+        .hidden { display: none; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #333; color: #fff; border: 1px solid #444; box-sizing: border-box;}
+        button { background: #27ae60; border:none; color: white; padding: 10px 15px; cursor:pointer; width:100%; font-weight:bold;}
+        .application-card { background: #1e1e1e; border-left: 5px solid #f39c12; margin: 15px 0; padding: 20px; border-radius: 4px; }
+        .photo-gallery img { max-width: 150px; margin: 5px; border: 1px solid #555; cursor: pointer; }
+        .meta { color: #aaa; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="loginSection" class="login-box">
+    <h2>Logowanie Admin / Rekruter</h2>
+    <label>Hasło Główne Ownera:</label>
+    <input type="password" id="adminPass">
+    <label>Twój Indywidualny Token:</label>
+    <input type="text" id="adminToken" placeholder="TOKEN_XYZ_...">
+    <button onclick="login()">Zaloguj się</button>
+</div>
+
+<div id="panelSection" class="hidden">
+    <h1>Panel Zarządzania Podaniami</h1>
+    <button onclick="logout()" style="background:#c0392b; width:auto; float:right;">Wyloguj</button>
+    <div style="clear:both;"></div>
+    <div id="podaniaList">Ładowanie podań...</div>
+</div>
+
+<script>
+    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com'; // Zmień po wrzuceniu backendu na serwer!
+    let activeToken = "";
+
+    async function login() {
+        const password = document.getElementById('adminPass').value;
+        const token = document.getElementById('adminToken').value;
+
+        const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, token })
+        });
+
+        const resData = await response.json();
+        if(resData.success) {
+            activeToken = resData.tokenSesji;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('panelSection').classList.remove('hidden');
+            loadApplications();
+        } else {
+            alert(resData.error || 'Nieautoryzowany!');
+        }
+    }
+
+    async function loadApplications() {
+        const response = await fetch(`${BACKEND_URL}/api/admin/podania`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: activeToken })
+        });
+        
+        const podania = await response.json();
+        const container = document.getElementById('podaniaList');
+        container.innerHTML = "";
+
+        if(podania.length === 0) {
+            container.innerHTML = "<p>Brak zgłoszeń w bazie.</p>";
+            return;
+        }
+
+        podania.forEach(p => {
+            let photosHtml = "";
+            if(p.zdjecia) {
+                const photosArray = p.zdjecia.split('|');
+                photosArray.forEach(img => {
+                    if(img) photosHtml += `<a href="${img}" target="_blank"><img src="${img}"></a>`;
+                });
+            }
+
+            container.innerHTML += `
+                <div class="application-card">
+                    <h3>Podanie od: ${p.imie} (Wiek: ${p.wiek}) - Miasto: ${p.miasto}</h3>
+                    <p class="meta">Data złożenia: ${p.data_zlozenia} | Status: <strong>${p.status}</strong></p>
+                    <p><strong>O sobie:</strong> ${p.o_sobie}</p>
+                    <p><strong>Godziny ETS2:</strong> ${p.godzin_ets2} | <strong>Poprzednie firmy:</strong> ${p.firmy_wczesniej} (${p.dlaczego_opuszczone})</p>
+                    <p><strong>Steam:</strong> <a href="${p.link_steam}" target="_blank">${p.link_steam}</a> | <strong>TrucksBook:</strong> ${p.posiada_trucksbook} (${p.link_trucksbook || 'brak'})</p>
+                    <p><strong>ProMods:</strong> ${p.posiada_promods} | <strong>Mapy DLC:</strong> ${p.dlc_mapowe || 'Brak'} | <strong>DDS:</strong> ${p.podmiana_dds}</p>
+                    <p><strong>Dlaczego my:</strong> ${p.dlaczego_my}</p>
+                    <p><strong>Dlaczego on:</strong> ${p.dlaczego_ciebie}</p>
+                    <div class="photo-gallery">${photosHtml}</div>
+                </div>
+            `;
+        });
+    }
+
+    function logout() {
+        location.reload();
+    }
+</script>
+</body>
+</html>
