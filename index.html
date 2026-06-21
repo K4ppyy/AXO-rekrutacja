@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekrutacja | AXO Logistyka</title>
     
-    <!-- Kod dodający ikonę AXO_logo.ico na karcie przeglądarki -->
     <link rel="icon" type="image/x-icon" href="Design/AXO_logo.ico">
     
     <style>
@@ -265,24 +264,48 @@
         <p class="note">Minimalnie 3 zdjęcia</p>
         <input type="file" id="photosInput" multiple accept="image/*" required>
 
-        <button type="submit">Wyślij Podanie rekrutacyjne</button>
+        <button type="submit" id="submitBtn">Wyślij Podanie rekrutacyjne</button>
     </form>
 </div>
 
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
 
-    const toBase64 = file => new Promise((resolve, reject) => {
+    // Funkcja kompresująca zdjęcia przed wysyłką, aby nie zatykać bazy danych
+    const resizeAndCompressImage = (file) => new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1024; // Zmniejszamy szerokość do max 1024px
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Zapisujemy jako JPEG o jakości 60% (ogromna oszczędność wagi, świetna jakość tekstowa)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                resolve(dataUrl);
+            };
+        };
     });
 
     document.getElementById('recruitmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const files = document.getElementById('photosInput').files;
+        const submitBtn = document.getElementById('submitBtn');
         
         if (files.length < 3) {
             alert('Prosimy o dodanie minimalnie 3 zdjęć z gry!');
@@ -290,19 +313,27 @@
         }
         
         try {
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Wysyłanie i kompresja zdjęć...';
+
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
             
+            // Mapowanie listy DLC
             const checkedDLCs = [];
             document.querySelectorAll('input[name="dlc"]:checked').forEach(cb => {
                 checkedDLCs.push(cb.value);
             });
-            data.dlc_mapowe = checkedDLCs.length > 0 ? checkedDLCs.join(', ') : 'Brak mapowych DLC';
-            delete data.dlc;
+            
+            const dlcString = checkedDLCs.length > 0 ? checkedDLCs.join(', ') : 'Brak mapowych DLC';
+            data.dlc = dlcString;
+            data.dlc_mapowe = dlcString; // Na wszelki wypadek wysyłamy w obu wariantach nazw kolumn
 
+            // Kompresja i przetwarzanie zdjęć
             const encodedPhotos = [];
             for (let i = 0; i < files.length; i++) {
-                encodedPhotos.push(await toBase64(files[i]));
+                const compressedBase64 = await resizeAndCompressImage(files[i]);
+                encodedPhotos.push(compressedBase64);
             }
             data.zdjecia = encodedPhotos.join('|');
 
@@ -313,15 +344,18 @@
             });
 
             const result = await response.json();
-            if(result.success) {
+            if (result.success) {
                 alert('Sukces! Twoje podanie do AXO Logistyka zostało wysłane pomyślnie.');
                 e.target.reset();
             } else {
-                alert('Serwer odrzucił dane: ' + result.error);
+                alert('Serwer odrzucił dane: ' + (result.error || 'Nieznany błąd struktury bazy danych.'));
             }
         } catch (error) {
             alert('Błąd połączenia z serwerem AXO. Spróbuj ponownie za chwilę.');
             console.error(error);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Wyślij Podanie rekrutacyjne';
         }
     });
 </script>
