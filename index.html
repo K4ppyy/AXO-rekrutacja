@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Rekrutacja do Firmy ETS2</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+        .container { max-width: 700px; margin: 0 auto; background: #2d2d2d; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1, h3 { color: #f39c12; border-bottom: 2px solid #f39c12; padding-bottom: 5px; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 10px; background: #444; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 100px; resize: vertical; }
+        button { background: #f39c12; color: #fff; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold;}
+        button:hover { background: #e67e22; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Formularz Rekrutacyjny VS</h1>
+    <form id="recruitmentForm">
+        <h3>Podstawowe informacje</h3>
+        <label>Imię:</label>
+        <input type="text" name="imie" required>
+
+        <label>Wiek (Jeśli poniżej 16 lat – wpisz odwrotnie, np. 51 dla 15):</label>
+        <input type="text" name="wiek" required>
+
+        <label>Okolice/Miasto:</label>
+        <input type="text" name="miasto" required>
+
+        <h3>Informacje o sobie</h3>
+        <label>Opowiedz coś o sobie (kilka zdań):</label>
+        <textarea name="o_sobie" required></textarea>
+
+        <label>Ile masz godzin w ETS2:</label>
+        <input type="text" name="godzin_ets2" required>
+
+        <label>W jakich firmach wcześniej jeździłeś:</label>
+        <textarea name="firmy_wczesniej"></textarea>
+
+        <label>Dlaczego je opuściłeś:</label>
+        <textarea name="dlaczego_opuszczone"></textarea>
+
+        <h3>Dodatki i Linki</h3>
+        <label>Czy posiadasz konto na TrucksBook?</label>
+        <select name="posiada_trucksbook"><option>Tak</option><option>Nie</option></select>
+
+        <label>Link do profilu TrucksBook:</label>
+        <input type="url" name="link_trucksbook">
+
+        <label>Link do profilu Steam:</label>
+        <input type="url" name="link_steam" required>
+
+        <label>Czy posiadasz ProMods?</label>
+        <select name="posiada_promods"><option>Tak</option><option>Nie</option></select>
+
+        <label>Jeśli nie, jakie DLC mapowe posiadasz?</label>
+        <input type="text" name="dlc_mapowe">
+
+        <label>Czy potrafisz podmienić plik DDS?</label>
+        <select name="podmiana_dds"><option>Tak</option><option>Nie</option><option>Nie wiem o co chodzi</option></select>
+
+        <h3>Dlaczego my?</h3>
+        <label>Dlaczego chciałbyś dołączyć do naszej firmy?</label>
+        <textarea name="dlaczego_my" required></textarea>
+
+        <label>Dlaczego powinniśmy wybrać właśnie Ciebie?</label>
+        <textarea name="dlaczego_ciebie" required></textarea>
+
+        <h3>Dodatkowo</h3>
+        <label>Dodaj zdjęcia z gry (Maksymalnie 5 sztuk):</label>
+        <input type="file" id="photosInput" multiple accept="image/*">
+
+        <button type="submit">Wyślij Podanie rekrutacyjne</button>
+    </form>
+</div>
+
+<script>
+    const BACKEND_URL = 'http://localhost:3000'; // Zmień po wrzuceniu backendu na serwer!
+
+    // Funkcja zmieniająca pliki graficzne na tekst (Base64), żeby przesłać je w JSONie
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    document.getElementById('recruitmentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Obsługa zdjęć
+        const files = document.getElementById('photosInput').files;
+        const encodedPhotos = [];
+        for (let i = 0; i < Math.min(files.length, 5); i++) {
+            encodedPhotos.push(await toBase64(files[i]));
+        }
+        data.zdjecia = encodedPhotos.join('|'); // Łączymy zdjęcia specjalnym znakiem separacji
+
+        const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if(result.success) {
+            alert('Sukces! Twoje podanie zostało zapisane. Oczekuj odpowiedzi.');
+            e.target.reset();
+        } else {
+            alert('Wystąpił błąd podczas wysyłania podania.');
+        }
+    });
+</script>
+</body>
+</html>
