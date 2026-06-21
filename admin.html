@@ -29,7 +29,7 @@
         /* EKRAN LOGOWANIA */
         #loginBlocker {
             position: fixed;
-            top:0; left:0; width:100%; height:100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-dark);
             z-index: 9999;
             display: flex;
@@ -49,7 +49,7 @@
         }
 
         .login-box img {
-            max-width: 100px;
+            max-width: 120px;
             margin-bottom: 20px;
             border-radius: 8px;
         }
@@ -67,7 +67,7 @@
             text-align: center;
         }
 
-        /* GŁÓWNY PANEL (UKRYTY PRZED ZALOGOWANIEM) */
+        /* GŁÓWNY PANEL */
         #adminMainContent {
             display: none;
             max-width: 1200px;
@@ -208,7 +208,7 @@
         .btn-view:hover, .btn-login:hover { background: #b80f0f; }
         .btn-login { width: 100%; padding: 12px; text-transform: uppercase; }
 
-        /* Modal */
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -295,7 +295,6 @@
 </head>
 <body>
 
-<!-- BLOKADA / EKRAN LOGOWANIA -->
 <div id="loginBlocker">
     <div class="login-box">
         <img src="Design/AXO.png" alt="AXO Logo">
@@ -305,7 +304,6 @@
     </div>
 </div>
 
-<!-- GŁÓWNA ZAWARTOŚĆ PANELU -->
 <div id="adminMainContent">
     <header>
         <div class="logo-area">
@@ -349,7 +347,6 @@
     </div>
 </div>
 
-<!-- MODAL ZE SZCZEGÓŁAMI -->
 <div class="modal" id="appModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModal()">&times;</span>
@@ -393,42 +390,40 @@
     let allApplications = [];
     let savedPassword = "";
 
-    // Funkcja weryfikacji logowania na froncie
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value;
-        
         if(passwordInput === "") {
             alert("Hasło nie może być puste!");
             return;
         }
-
-        // Zapisujemy wpisane hasło do zmiennej, by słać je w nagłówkach do Render
         savedPassword = passwordInput;
-        
-        // Ukrywamy ekran logowania, pokazujemy panel
         document.getElementById('loginBlocker').style.display = 'none';
         document.getElementById('adminMainContent').style.display = 'block';
-        
-        // Pobieramy dane z serwera
         fetchApplications();
     }
 
     function handleKeyPress(e) {
-        if(e.key === 'Enter') {
-            checkLogin();
-        }
+        if(e.key === 'Enter') { checkLogin(); }
     }
 
-    // Pobieranie danych z serwera z uwzględnieniem autoryzacji
     async function fetchApplications() {
+        const container = document.getElementById('appsListContainer');
         try {
+            // Słanie zapytania do bazy z nagłówkiem zabezpieczającym
             const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-                headers: {
-                    'Authorization': `Bearer ${savedPassword}`
-                }
+                headers: { 'Authorization': `Bearer ${savedPassword}` }
             });
+
+            if (!response.ok) {
+                throw new Error(`Serwer zwrócił błąd statusu: ${response.status}. Sprawdź poprawność hasła lub adres API.`);
+            }
+
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new TypeError("Otrzymana odpowiedź to HTML, a nie dane JSON. Błędny adres endpointu na serwerze.");
+            }
+
             const result = await response.json();
-            
             if(result.success) {
                 allApplications = result.data || [];
                 updateStats();
@@ -438,7 +433,10 @@
             }
         } catch (error) {
             console.error(error);
-            alert('Błąd pobierania danych. Sprawdź konsolę przeglądarki lub upewnij się, czy backend na Render działa.');
+            container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
+                Komunikat błędu: ${error.message}<br>
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że backend na Renderze przetwarza ścieżkę /api/rekrutacja</span>
+            </p>`;
         }
     }
 
@@ -452,18 +450,16 @@
     function renderApplications(apps) {
         const container = document.getElementById('appsListContainer');
         container.innerHTML = '';
-
         if(apps.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Brak podań spełniających kryteria.</p>';
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Brak podań w bazie.</p>';
             return;
         }
-
         apps.forEach(app => {
             const item = document.createElement('div');
             item.className = 'app-item';
             item.innerHTML = `
                 <div class="app-info">
-                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto}</span></h3>
+                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--xo-red)">${app.miasto}</span></h3>
                     <p>Discord: <strong>${app.discord_nick}</strong></p>
                     <div class="meta-tags">
                         <span>Godziny: ${app.godzin_ets2}</span>
@@ -483,13 +479,11 @@
     function filterApplications() {
         const searchText = document.getElementById('searchBar').value.toLowerCase();
         const statusFilter = document.getElementById('statusFilter').value;
-
         const filtered = allApplications.filter(app => {
             const matchesSearch = app.discord_nick.toLowerCase().includes(searchText) || app.imie.toLowerCase().includes(searchText);
             const matchesStatus = statusFilter === 'wszystkie' || app.status === statusFilter;
             return matchesSearch && matchesStatus;
         });
-
         renderApplications(filtered);
     }
 
@@ -502,11 +496,9 @@
         document.getElementById('m-discord-nick').innerText = app.discord_nick;
         document.getElementById('m-discord-id').innerText = app.discord_id;
         document.getElementById('m-godziny').innerText = app.godzin_ets2;
-        
         document.getElementById('m-steam').href = app.link_steam;
         document.getElementById('m-tb').href = app.link_trucksbook || '#';
         document.getElementById('m-promods-dds').innerText = `ProMods: ${app.posiada_promods} | Ogarnia DDS: ${app.podmiana_dds}`;
-        
         document.getElementById('m-osobie').innerText = app.o_sobie;
         document.getElementById('m-firmy').innerText = `Firmy: ${app.firmy_wczesniej || 'Brak'} \nPowód odejścia: ${app.dlaczego_opuszczone || '-'}`;
         document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my} \nDlaczego On: ${app.dlaczego_ciebie}`;
@@ -538,20 +530,21 @@
         } else {
             actionsDiv.innerHTML = `<span style="color: var(--text-muted);">Decyzja podjęta. Status: <b style="text-transform:uppercase">${app.status}</b></span>`;
         }
-
         document.getElementById('appModal').style.display = 'flex';
     }
 
-    function closeModal() {
-        document.getElementById('appModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('appModal').style.display = 'none'; }
 
-    // Zmiana statusu podania z przekazaniem tokenu autoryzacji
     async function changeStatus(id, newStatus) {
         if(!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}/status`, {
+            // Zmiana trasy na standardową: /api/rekrutacja/:id
+            // UWAGA: Jeśli Twój serwer wymaga starej ścieżki, zamień poniższą linijkę na:
+            // const targetUrl = `${BACKEND_URL}/api/rekrutacja/${id}/status`;
+            const targetUrl = `${BACKEND_URL}/api/rekrutacja/${id}`;
+
+            const response = await fetch(targetUrl, {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -559,17 +552,21 @@
                 },
                 body: JSON.stringify({ status: newStatus })
             });
-            const result = await response.json();
 
+            if (!response.ok) {
+                throw new Error(`Serwer zwrócił kod błędu ${response.status} przy aktualizacji statusu.`);
+            }
+
+            const result = await response.json();
             if(result.success) {
-                alert('Status zaktualizowany pomyślnie!');
+                alert('Status podania zaktualizowany pomyślnie!');
                 closeModal();
                 fetchApplications();
             } else {
-                alert('Błąd serwera przy zmianie statusu: ' + result.error);
+                alert('Błąd serwera: ' + result.error);
             }
         } catch (error) {
-            alert('Błąd komunikacji z serwerem. Upewnij się, że wpisane hasło administratora jest poprawne.');
+            alert('Wystąpił błąd zapisu: ' + error.message);
             console.error(error);
         }
     }
