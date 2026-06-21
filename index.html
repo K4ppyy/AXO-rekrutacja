@@ -2,73 +2,214 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Rekrutacja do Firmy ETS2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekrutacja | AXO Logistyka</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
-        .container { max-width: 700px; margin: 0 auto; background: #2d2d2d; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h1, h3 { color: #f39c12; border-bottom: 2px solid #f39c12; padding-bottom: 5px; }
-        label { display: block; margin: 15px 0 5px; font-weight: bold; }
-        input, textarea, select { width: 100%; padding: 10px; background: #444; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        textarea { height: 100px; resize: vertical; }
-        button { background: #f39c12; color: #fff; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 25px; font-weight: bold;}
-        button:hover { background: #e67e22; }
+        :root {
+            --axo-red: #e31212;
+            --bg-dark: #121212;
+            --card-bg: #1a1a1a;
+            --input-bg: #262626;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container { 
+            max-width: 650px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-top: 4px solid var(--axo-red);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-container img {
+            max-width: 180px;
+            height: auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 0;
+            color: var(--text-main);
+        }
+
+        h1 span {
+            color: var(--axo-red);
+        }
+
+        h3 { 
+            color: var(--axo-red); 
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #333; 
+            padding-bottom: 8px; 
+            margin-top: 35px;
+            margin-bottom: 15px;
+        }
+
+        label { 
+            display: block; 
+            margin: 18px 0 6px; 
+            font-weight: 600; 
+            font-size: 14px;
+            color: #e5e5e5;
+        }
+
+        input, textarea, select { 
+            width: 100%; 
+            padding: 12px; 
+            background: var(--input-bg); 
+            border: 1px solid #333; 
+            color: var(--text-main); 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--axo-red);
+            box-shadow: 0 0 5px rgba(227, 18, 18, 0.4);
+        }
+
+        textarea { 
+            height: 110px; 
+            resize: vertical; 
+        }
+
+        .note {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: -3px;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        button { 
+            background: var(--axo-red); 
+            color: #fff; 
+            border: none; 
+            padding: 15px 20px; 
+            font-size: 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 35px; 
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.2s ease;
+        }
+
+        button:hover { 
+            background: #b80f0f; 
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background: #1f1f1f;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <h1>Formularz Rekrutacyjny VS</h1>
+    <div class="logo-container">
+        <img src="AXO.png" alt="AXO Logistyka Logo">
+    </div>
+    
+    <h1>System Rekrutacji <span>AXO Logistyka</span></h1>
+    
     <form id="recruitmentForm">
         <h3>Podstawowe informacje</h3>
+        
         <label>Imię:</label>
-        <input type="text" name="imie" required>
+        <input type="text" name="imie" required placeholder="np. Jan">
 
-        <label>Wiek (Jeśli poniżej 16 lat – wpisz odwrotnie, np. 51 dla 15):</label>
-        <input type="text" name="wiek" required>
+        <label>Wiek:</label>
+        <p class="note">Jeśli masz poniżej 16 lat – prosimy wpisać wiek odwrotnie (np. 51 zamiast 15)</p>
+        <input type="text" name="wiek" required placeholder="np. 18 lub 51">
 
-        <label>Okolice/Miasto:</label>
-        <input type="text" name="miasto" required>
+        <label>Okolice / Miasto:</label>
+        <input type="text" name="miasto" required placeholder="np. Warszawa">
 
         <h3>Informacje o sobie</h3>
+        
         <label>Opowiedz coś o sobie (kilka zdań):</label>
-        <textarea name="o_sobie" required></textarea>
+        <textarea name="o_sobie" required placeholder="Napisz parę słów o sobie, zainteresowaniach..."></textarea>
 
         <label>Ile masz godzin w ETS2:</label>
-        <input type="text" name="godzin_ets2" required>
+        <input type="text" name="godzin_ets2" required placeholder="np. 450 godz.">
 
         <label>W jakich firmach wcześniej jeździłeś:</label>
-        <textarea name="firmy_wczesniej"></textarea>
+        <textarea name="firmy_wczesniej" placeholder="Wymień poprzednie wirtualne spedycje..."></textarea>
 
         <label>Dlaczego je opuściłeś:</label>
-        <textarea name="dlaczego_opuszczone"></textarea>
+        <textarea name="dlaczego_opuszczone" placeholder="Podaj powód odejścia..."></textarea>
 
-        <h3>Dodatki i Linki</h3>
+        <h3>Dodatki i weryfikacja</h3>
+        
         <label>Czy posiadasz konto na TrucksBook?</label>
-        <select name="posiada_trucksbook"><option>Tak</option><option>Nie</option></select>
+        <select name="posiada_trucksbook">
+            <option>Tak</option>
+            <option>Nie</option>
+        </select>
 
         <label>Link do profilu TrucksBook:</label>
-        <input type="url" name="link_trucksbook">
+        <input type="url" name="link_trucksbook" placeholder="https://trucksbook.eu/company/...">
 
         <label>Link do profilu Steam:</label>
-        <input type="url" name="link_steam" required>
+        <input type="url" name="link_steam" required placeholder="https://steamcommunity.com/profiles/...">
 
         <label>Czy posiadasz ProMods?</label>
-        <select name="posiada_promods"><option>Tak</option><option>Nie</option></select>
+        <select name="posiada_promods">
+            <option>Tak</option>
+            <option>Nie</option>
+        </select>
 
         <label>Jeśli nie, jakie DLC mapowe posiadasz?</label>
-        <input type="text" name="dlc_mapowe">
+        <input type="text" name="dlc_mapowe" placeholder="np. Going East, Scandinavia, Vive la France...">
 
         <label>Czy potrafisz podmienić plik DDS?</label>
-        <select name="podmiana_dds"><option>Tak</option><option>Nie</option><option>Nie wiem o co chodzi</option></select>
+        <select name="podmiana_dds">
+            <option>Tak</option>
+            <option>Nie</option>
+            <option>Nie wiem o co chodzi</option>
+        </select>
 
-        <h3>Dlaczego my?</h3>
+        <h3>Dlaczego AXO Logistyka?</h3>
+        
         <label>Dlaczego chciałbyś dołączyć do naszej firmy?</label>
-        <textarea name="dlaczego_my" required></textarea>
+        <textarea name="dlaczego_my" required placeholder="Co Ci się u nas podoba?"></textarea>
 
         <label>Dlaczego powinniśmy wybrać właśnie Ciebie?</label>
-        <textarea name="dlaczego_ciebie" required></textarea>
+        <textarea name="dlaczego_ciebie" required placeholder="Przekonaj nas do siebie!"></textarea>
 
         <h3>Dodatkowo</h3>
-        <label>Dodaj zdjęcia z gry (Maksymalnie 5 sztuk):</label>
+        
+        <label>Wyślij 3–5 zdjęć z gry:</label>
+        <p class="note">Maksymalnie 5 plików graficznych (np. screeny Twoich ciężarówek)</p>
         <input type="file" id="photosInput" multiple accept="image/*">
 
         <button type="submit">Wyślij Podanie rekrutacyjne</button>
@@ -76,9 +217,8 @@
 </div>
 
 <script>
-    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com'; // Zmień po wrzuceniu backendu na serwer!
+    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
 
-    // Funkcja zmieniająca pliki graficzne na tekst (Base64), żeby przesłać je w JSONie
     const toBase64 = file => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -89,29 +229,33 @@
     document.getElementById('recruitmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-        
-        // Obsługa zdjęć
-        const files = document.getElementById('photosInput').files;
-        const encodedPhotos = [];
-        for (let i = 0; i < Math.min(files.length, 5); i++) {
-            encodedPhotos.push(await toBase64(files[i]));
-        }
-        data.zdjecia = encodedPhotos.join('|'); // Łączymy zdjęcia specjalnym znakiem separacji
+        try {
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            const files = document.getElementById('photosInput').files;
+            const encodedPhotos = [];
+            for (let i = 0; i < Math.min(files.length, 5); i++) {
+                encodedPhotos.push(await toBase64(files[i]));
+            }
+            data.zdjecia = encodedPhotos.join('|');
 
-        const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
 
-        const result = await response.json();
-        if(result.success) {
-            alert('Sukces! Twoje podanie zostało zapisane. Oczekuj odpowiedzi.');
-            e.target.reset();
-        } else {
-            alert('Wystąpił błąd podczas wysyłania podania.');
+            const result = await response.json();
+            if(result.success) {
+                alert('Sukces! Twoje podanie do AXO Logistyka zostało wysłane pomyślnie.');
+                e.target.reset();
+            } else {
+                alert('Serwer odrzucił dane: ' + result.error);
+            }
+        } catch (error) {
+            alert('Błąd połączenia z serwerem AXO. Spróbuj ponownie za chwilę.');
+            console.error(error);
         }
     });
 </script>
