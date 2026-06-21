@@ -2,105 +2,516 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Administratora - Rekrutacja</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora | AXO Logistyka</title>
+    <link rel="icon" type="image/x-icon" href="Design/AXO_logo.ico">
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; margin: 20px; }
-        .login-box { max-width: 400px; margin: 100px auto; background: #222; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px #000; }
-        .hidden { display: none; }
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #333; color: #fff; border: 1px solid #444; box-sizing: border-box;}
-        button { background: #27ae60; border:none; color: white; padding: 10px 15px; cursor:pointer; width:100%; font-weight:bold;}
-        .application-card { background: #1e1e1e; border-left: 5px solid #f39c12; margin: 15px 0; padding: 20px; border-radius: 4px; }
-        .photo-gallery img { max-width: 150px; margin: 5px; border: 1px solid #555; cursor: pointer; }
-        .meta { color: #aaa; font-size: 12px; }
+        :root {
+            --axo-red: #e31212;
+            --bg-dark: #121212;
+            --card-bg: #1a1a1a;
+            --input-bg: #262626;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --status-pending: #f1c40f;
+            --status-accepted: #2ecc71;
+            --status-rejected: #e74c3c;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            padding: 20px;
+            margin: 0;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--axo-red);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-area img {
+            max-width: 50px;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 span { color: var(--axo-red); }
+
+        /* Statystyki */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--text-muted);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .stat-card.total { border-left-color: var(--text-main); }
+        .stat-card.pending { border-left-color: var(--status-pending); }
+        .stat-card.accepted { border-left-color: var(--status-accepted); }
+        .stat-card.rejected { border-left-color: var(--status-rejected); }
+
+        .stat-card h4 { margin: 0 0 5px 0; color: var(--text-muted); text-transform: uppercase; font-size: 12px; }
+        .stat-card .number { font-size: 28px; font-weight: bold; }
+
+        /* Filtry i lista */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .search-input, .filter-select {
+            background: var(--input-bg);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-input { width: 300px; }
+
+        .applications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .app-item {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+            border: 1px solid #222;
+        }
+
+        .app-item:hover {
+            transform: translateX(5px);
+            border-color: #444;
+        }
+
+        .app-info h3 { margin: 0 0 8px 0; font-size: 18px; }
+        .app-info p { margin: 4px 0; color: var(--text-muted); font-size: 14px; }
+        .app-info .meta-tags { display: flex; gap: 15px; margin-top: 8px; }
+        .meta-tags span { background: #262626; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+
+        .app-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.oczekuje { background: rgba(241, 196, 15, 0.2); color: var(--status-pending); }
+        .status-badge.zaakceptowane { background: rgba(46, 204, 113, 0.2); color: var(--status-accepted); }
+        .status-badge.odrzucone { background: rgba(231, 76, 60, 0.2); color: var(--status-rejected); }
+
+        .btn-view {
+            background: var(--axo-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-view:hover { background: #b80f0f; }
+
+        /* Modal / Szczegóły podania */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 30px;
+            border-top: 4px solid var(--axo-red);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px; right: 20px;
+            font-size: 28px; color: var(--text-muted);
+            cursor: pointer;
+        }
+        .close-modal:hover { color: #fff; }
+
+        .modal-section {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .modal-section h4 { color: var(--axo-red); margin: 0 0 10px 0; text-transform: uppercase; }
+        
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .data-field { margin-bottom: 10px; }
+        .data-field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+        .data-field div { font-size: 15px; }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .photo-gallery img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: transform 0.2s;
+        }
+        .photo-gallery img:hover { transform: scale(1.05); }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-decision {
+            padding: 12px 25px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-accept { background: var(--status-accepted); color: #fff; }
+        .btn-reject { background: var(--status-rejected); color: #fff; }
     </style>
 </head>
 <body>
 
-<div id="loginSection" class="login-box">
-    <h2>Logowanie Admin / Rekruter</h2>
-    <label>Hasło Główne Ownera:</label>
-    <input type="password" id="adminPass">
-    <label>Twój Indywidualny Token:</label>
-    <input type="text" id="adminToken" placeholder="TOKEN_XYZ_...">
-    <button onclick="login()">Zaloguj się</button>
+<div class="admin-container">
+    <header>
+        <div class="logo-area">
+            <img src="Design/AXO.png" alt="AXO Logo">
+            <h1>Panel Zarządzania <span>AXO Logistyka</span></h1>
+        </div>
+        <button class="btn-view" onclick="fetchApplications()">Odśwież</button>
+    </header>
+
+    <!-- KAFELKI STATYSTYK -->
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <h4>Wszystkie podania</h4>
+            <div class="number" id="stat-total">0</div>
+        </div>
+        <div class="stat-card pending">
+            <h4>Oczekujące</h4>
+            <div class="number" id="stat-pending">0</div>
+        </div>
+        <div class="stat-card accepted">
+            <h4>Zaakceptowane</h4>
+            <div class="number" id="stat-accepted">0</div>
+        </div>
+        <div class="stat-card rejected">
+            <h4>Odrzucone</h4>
+            <div class="number" id="stat-rejected">0</div>
+        </div>
+    </div>
+
+    <!-- FILTROWANIE -->
+    <div class="controls">
+        <input type="text" class="search-input" id="searchBar" placeholder="Szukaj po nicku lub imieniu..." oninput="filterApplications()">
+        <select class="filter-select" id="statusFilter" onchange="filterApplications()">
+            <option value="wszystkie">Wszystkie statusy</option>
+            <option value="oczekuje">Oczekujące</option>
+            <option value="zaakceptowane">Zaakceptowane</option>
+            <option value="odrzucone">Odrzucone</option>
+        </select>
+    </div>
+
+    <!-- LISTA PODAŃ -->
+    <div class="applications-list" id="appsListContainer">
+        <!-- Tutaj JS wstrzyknie podania -->
+        <p style="text-align: center; color: var(--text-muted);">Ładowanie podań rekrutacyjnych...</p>
+    </div>
 </div>
 
-<div id="panelSection" class="hidden">
-    <h1>Panel Zarządzania Podaniami</h1>
-    <button onclick="logout()" style="background:#c0392b; width:auto; float:right;">Wyloguj</button>
-    <div style="clear:both;"></div>
-    <div id="podaniaList">Ładowanie podań...</div>
+<!-- MODAL ZE SZCZEGÓŁAMI -->
+<div class="modal" id="appModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2 style="margin-top:0; margin-bottom: 20px;">Szczegóły Podania rekrutacyjnego</h2>
+        
+        <div class="modal-section grid-2col">
+            <div class="data-field"><label>Imię i Wiek</label><div id="m-imie-wiek"></div></div>
+            <div class="data-field"><label>Lokalizacja</label><div id="m-miasto"></div></div>
+            <div class="data-field"><label>Discord Nick</label><div id="m-discord-nick" style="color: var(--status-pending); font-weight: bold;"></div></div>
+            <div class="data-field"><label>Discord ID</label><div id="m-discord-id"></div></div>
+        </div>
+
+        <div class="modal-section grid-2col">
+            <div class="data-field"><label>Godziny ETS2</label><div id="m-godziny"></div></div>
+            <div class="data-field"><label>Profil Steam</label><div><a id="m-steam" href="#" target="_blank" style="color: #3498db;">Otwórz profil</a></div></div>
+            <div class="data-field"><label>TrucksBook</label><div><a id="m-tb" href="#" target="_blank" style="color: #3498db;">Otwórz TrucksBook</a></div></div>
+            <div class="data-field"><label>ProMods / DDS</label><div id="m-promods-dds"></div></div>
+        </div>
+
+        <div class="modal-section">
+            <div class="data-field"><label>Opis o sobie</label><div id="m-osobie"></div></div>
+            <div class="data-field" style="margin-top: 10px;"><label>Poprzednie firmy i powód odejścia</label><div id="m-firmy"></div></div>
+        </div>
+
+        <div class="modal-section">
+            <div class="data-field"><label>Dlaczego AXO i dlaczego on?</label><div id="m-dlaczego"></div></div>
+            <div class="data-field" style="margin-top: 10px;"><label>Posiadane DLC Mapowe</label><div id="m-dlc"></div></div>
+        </div>
+
+        <div class="modal-section">
+            <h4>Zdjęcia z gry</h4>
+            <div class="photo-gallery" id="m-galeria"></div>
+        </div>
+
+        <div class="modal-actions" id="modalActionButtons">
+            <!-- Przyciski decyzyjne generowane dynamicznie -->
+        </div>
+    </div>
 </div>
 
 <script>
-    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com'; // Zmień po wrzuceniu backendu na serwer!
-    let activeToken = "";
+    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
+    let allApplications = [];
 
-    async function login() {
-        const password = document.getElementById('adminPass').value;
-        const token = document.getElementById('adminToken').value;
-
-        const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password, token })
-        });
-
-        const resData = await response.json();
-        if(resData.success) {
-            activeToken = resData.tokenSesji;
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('panelSection').classList.remove('hidden');
-            loadApplications();
-        } else {
-            alert(resData.error || 'Nieautoryzowany!');
+    // Pobieranie danych z serwera
+    async function fetchApplications() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`);
+            const result = await response.json();
+            
+            if(result.success) {
+                allApplications = result.data || [];
+                updateStats();
+                renderApplications(allApplications);
+            } else {
+                alert('Błąd serwera podczas pobierania danych.');
+            }
+        } catch (error) {
+            console.error(error);
+            // Dane demonstracyjne na wypadek braku połączenia z backendem podczas testów lokalnych
+            allApplications = [
+                {
+                    id: 1, imie: "Jan", wiek: "21", miasto: "Kraków", discord_nick: "jano_ets", discord_id: "123456789012345",
+                    o_sobie: "Cześć, lubię symulatory, jeżdżę od 3 lat wieczorami.", godzin_ets2: "620h", firmy_wczesniej: "Brak", dlaczego_opuszczone: "-",
+                    posiada_trucksbook: "Tak", link_trucksbook: "https://trucksbook.eu", link_steam: "https://steamcommunity.com", posiada_promods: "Tak",
+                    dlc_mapowe: "Going East, Scandinavia, Italia", podmiana_dds: "Tak", dlaczego_my: "Bo macie fajną atmosferę", dlaczego_ciebie: "Jestem bezkonfliktowy",
+                    status: "oczekuje", zdjecia: ""
+                }
+            ];
+            updateStats();
+            renderApplications(allApplications);
         }
     }
 
-    async function loadApplications() {
-        const response = await fetch(`${BACKEND_URL}/api/admin/podania`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: activeToken })
-        });
-        
-        const podania = await response.json();
-        const container = document.getElementById('podaniaList');
-        container.innerHTML = "";
+    // Aktualizacja liczników statystyk
+    function updateStats() {
+        document.getElementById('stat-total').innerText = allApplications.length;
+        document.getElementById('stat-pending').innerText = allApplications.filter(a => a.status === 'oczekuje').length;
+        document.getElementById('stat-accepted').innerText = allApplications.filter(a => a.status === 'zaakceptowane').length;
+        document.getElementById('stat-rejected').innerText = allApplications.filter(a => a.status === 'odrzucone').length;
+    }
 
-        if(podania.length === 0) {
-            container.innerHTML = "<p>Brak zgłoszeń w bazie.</p>";
+    // Wyświetlanie listy podań
+    function renderApplications(apps) {
+        const container = document.getElementById('appsListContainer');
+        container.innerHTML = '';
+
+        if(apps.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Brak podań spełniających kryteria.</p>';
             return;
         }
 
-        podania.forEach(p => {
-            let photosHtml = "";
-            if(p.zdjecia) {
-                const photosArray = p.zdjecia.split('|');
-                photosArray.forEach(img => {
-                    if(img) photosHtml += `<a href="${img}" target="_blank"><img src="${img}"></a>`;
-                });
-            }
-
-            container.innerHTML += `
-                <div class="application-card">
-                    <h3>Podanie od: ${p.imie} (Wiek: ${p.wiek}) - Miasto: ${p.miasto}</h3>
-                    <p class="meta">Data złożenia: ${p.data_zlozenia} | Status: <strong>${p.status}</strong></p>
-                    <p><strong>O sobie:</strong> ${p.o_sobie}</p>
-                    <p><strong>Godziny ETS2:</strong> ${p.godzin_ets2} | <strong>Poprzednie firmy:</strong> ${p.firmy_wczesniej} (${p.dlaczego_opuszczone})</p>
-                    <p><strong>Steam:</strong> <a href="${p.link_steam}" target="_blank">${p.link_steam}</a> | <strong>TrucksBook:</strong> ${p.posiada_trucksbook} (${p.link_trucksbook || 'brak'})</p>
-                    <p><strong>ProMods:</strong> ${p.posiada_promods} | <strong>Mapy DLC:</strong> ${p.dlc_mapowe || 'Brak'} | <strong>DDS:</strong> ${p.podmiana_dds}</p>
-                    <p><strong>Dlaczego my:</strong> ${p.dlaczego_my}</p>
-                    <p><strong>Dlaczego on:</strong> ${p.dlaczego_ciebie}</p>
-                    <div class="photo-gallery">${photosHtml}</div>
+        apps.forEach(app => {
+            const item = document.createElement('div');
+            item.className = 'app-item';
+            item.innerHTML = `
+                <div class="app-info">
+                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto}</span></h3>
+                    <p>Discord: <strong>${app.discord_nick}</strong></p>
+                    <div class="meta-tags">
+                        <span>Godziny: ${app.godzin_ets2}</span>
+                        <span>TrucksBook: ${app.posiada_trucksbook}</span>
+                        <span>ProMods: ${app.posiada_promods}</span>
+                    </div>
+                </div>
+                <div class="app-actions">
+                    <span class="status-badge ${app.status}">${app.status}</span>
+                    <button class="btn-view" onclick="openModal(${app.id})">Zobacz</button>
                 </div>
             `;
+            container.appendChild(item);
         });
     }
 
-    function logout() {
-        location.reload();
+    // Wyszukiwarka i filtry
+    function filterApplications() {
+        const searchText = document.getElementById('searchBar').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+
+        const filtered = allApplications.filter(app => {
+            const matchesSearch = app.discord_nick.toLowerCase().includes(searchText) || app.imie.toLowerCase().includes(searchText);
+            const matchesStatus = statusFilter === 'wszystkie' || app.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+
+        renderApplications(filtered);
     }
+
+    // Otwieranie szczegółów (Modal)
+    function openModal(id) {
+        const app = allApplications.find(a => a.id === id);
+        if(!app) return;
+
+        document.getElementById('m-imie-wiek').innerText = `${app.imie} (${app.wiek} lat)`;
+        document.getElementById('m-miasto').innerText = app.miasto;
+        document.getElementById('m-discord-nick').innerText = app.discord_nick;
+        document.getElementById('m-discord-id').innerText = app.discord_id;
+        document.getElementById('m-godziny').innerText = app.godzin_ets2;
+        
+        document.getElementById('m-steam').href = app.link_steam;
+        document.getElementById('m-tb').href = app.link_trucksbook || '#';
+        document.getElementById('m-promods-dds').innerText = `ProMods: ${app.posiada_promods} | Ogarnia DDS: ${app.podmiana_dds}`;
+        
+        document.getElementById('m-osobie').innerText = app.o_sobie;
+        document.getElementById('m-firmy').innerText = `Firmy: ${app.firmy_wczesniej || 'Brak'} \nPowód odejścia: ${app.dlaczego_opuszczone || '-'}`;
+        document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my} \nDlaczego On: ${app.dlaczego_ciebie}`;
+        document.getElementById('m-dlc').innerText = app.dlc_mapowe;
+
+        // Galeria zdjęć (parsowanie rozdzielonych znakiem '|')
+        const galeria = document.getElementById('m-galeria');
+        galeria.innerHTML = '';
+        if(app.zdjecia) {
+            const fotki = app.zdjecia.split('|');
+            fotki.forEach(src => {
+                if(src.startsWith('data:image')) {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.onclick = () => window.open(src, '_blank');
+                    galeria.appendChild(img);
+                }
+            });
+        } else {
+            galeria.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Brak przesłanych zdjęć lub zły format</span>';
+        }
+
+        // Przyciski akcji w modalu
+        const actionsDiv = document.getElementById('modalActionButtons');
+        actionsDiv.innerHTML = '';
+        if(app.status === 'oczekuje') {
+            actionsDiv.innerHTML = `
+                <button class="btn-decision btn-reject" onclick="changeStatus(${app.id}, 'odrzucone')">Odrzuć</button>
+                <button class="btn-decision btn-accept" onclick="changeStatus(${app.id}, 'zaakceptowane')">Zaakceptuj</button>
+            `;
+        } else {
+            actionsDiv.innerHTML = `<span style="color: var(--text-muted);">Decyzja podjęta. Status: <b style="text-transform:uppercase">${app.status}</b></span>`;
+        }
+
+        document.getElementById('appModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('appModal').style.display = 'none';
+    }
+
+    // Zmiana statusu podania (Akceptacja / Odrzucenie)
+    async function changeStatus(id, newStatus) {
+        if(!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            const result = await response.json();
+
+            if(result.success) {
+                alert('Status zaktualizowany pomyślnie!');
+                closeModal();
+                fetchApplications();
+            } else {
+                alert('Błąd serwera przy zmianie statusu: ' + result.error);
+            }
+        } catch (error) {
+            alert('Błąd komunikacji z serwerem.');
+            console.error(error);
+        }
+    }
+
+    // Inicjalizacja przy starcie strony
+    window.onload = fetchApplications;
 </script>
 </body>
 </html>
