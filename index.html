@@ -37,11 +37,10 @@
             margin-bottom: 30px;
         }
 
-        /* Tutaj zaokrągliłem krawędzie obrazka z logo */
         .logo-container img {
             max-width: 180px;
             height: auto;
-            border-radius: 10px; /* Zaokrąglenie krawędzi */
+            border-radius: 10px;
         }
 
         h1 {
@@ -179,6 +178,14 @@
         
         <label>Imię:</label>
         <input type="text" name="imie" required placeholder="np. Jan">
+
+        <!-- NOWE POLA DISCORD -->
+        <label>Nick na Discordzie:</label>
+        <input type="text" name="discord_nick" required placeholder="np. k4ppyy">
+
+        <label>ID konta Discord:</label>
+        <p class="note">Ciąg samych cyfr (np. 348239042934823). Włącz Tryb Dewelopera w Discordzie, kliknij na swój profil i wybierz "Kopiuj ID użytkownika".</p>
+        <input type="text" name="discord_id" required placeholder="np. 412536789012345678">
 
         <label>Wiek:</label>
         <input type="text" name="wiek" required placeholder="np. 18">
