@@ -26,7 +26,50 @@
             margin: 0;
         }
 
-        .admin-container {
+        /* EKRAN LOGOWANIA */
+        #loginBlocker {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-top: 4px solid var(--axo-red);
+            text-align: center;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-box img {
+            max-width: 100px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* GŁÓWNY PANEL (UKRYTY PRZED ZALOGOWANIEM) */
+        #adminMainContent {
+            display: none;
             max-width: 1200px;
             margin: 0 auto;
         }
@@ -61,7 +104,6 @@
 
         h1 span { color: var(--axo-red); }
 
-        /* Statystyki */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -85,7 +127,6 @@
         .stat-card h4 { margin: 0 0 5px 0; color: var(--text-muted); text-transform: uppercase; font-size: 12px; }
         .stat-card .number { font-size: 28px; font-weight: bold; }
 
-        /* Filtry i lista */
         .controls {
             display: flex;
             justify-content: space-between;
@@ -153,7 +194,7 @@
         .status-badge.zaakceptowane { background: rgba(46, 204, 113, 0.2); color: var(--status-accepted); }
         .status-badge.odrzucone { background: rgba(231, 76, 60, 0.2); color: var(--status-rejected); }
 
-        .btn-view {
+        .btn-view, .btn-login {
             background: var(--axo-red);
             color: white;
             border: none;
@@ -164,9 +205,10 @@
             transition: background 0.2s;
         }
 
-        .btn-view:hover { background: #b80f0f; }
+        .btn-view:hover, .btn-login:hover { background: #b80f0f; }
+        .btn-login { width: 100%; padding: 12px; text-transform: uppercase; }
 
-        /* Modal / Szczegóły podania */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -253,7 +295,18 @@
 </head>
 <body>
 
-<div class="admin-container">
+<!-- BLOKADA / EKRAN LOGOWANIA -->
+<div id="loginBlocker">
+    <div class="login-box">
+        <img src="Design/AXO.png" alt="AXO Logo">
+        <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 20px; text-transform: uppercase;">Panel Logowania</h2>
+        <input type="password" id="adminPassword" placeholder="Wpisz hasło administratora" onkeypress="handleKeyPress(event)">
+        <button class="btn-login" onclick="checkLogin()">Zaloguj się</button>
+    </div>
+</div>
+
+<!-- GŁÓWNA ZAWARTOŚĆ PANELU -->
+<div id="adminMainContent">
     <header>
         <div class="logo-area">
             <img src="Design/AXO.png" alt="AXO Logo">
@@ -262,7 +315,6 @@
         <button class="btn-view" onclick="fetchApplications()">Odśwież</button>
     </header>
 
-    <!-- KAFELKI STATYSTYK -->
     <div class="stats-grid">
         <div class="stat-card total">
             <h4>Wszystkie podania</h4>
@@ -282,7 +334,6 @@
         </div>
     </div>
 
-    <!-- FILTROWANIE -->
     <div class="controls">
         <input type="text" class="search-input" id="searchBar" placeholder="Szukaj po nicku lub imieniu..." oninput="filterApplications()">
         <select class="filter-select" id="statusFilter" onchange="filterApplications()">
@@ -293,9 +344,7 @@
         </select>
     </div>
 
-    <!-- LISTA PODAŃ -->
     <div class="applications-list" id="appsListContainer">
-        <!-- Tutaj JS wstrzyknie podania -->
         <p style="text-align: center; color: var(--text-muted);">Ładowanie podań rekrutacyjnych...</p>
     </div>
 </div>
@@ -335,20 +384,49 @@
             <div class="photo-gallery" id="m-galeria"></div>
         </div>
 
-        <div class="modal-actions" id="modalActionButtons">
-            <!-- Przyciski decyzyjne generowane dynamicznie -->
-        </div>
+        <div class="modal-actions" id="modalActionButtons"></div>
     </div>
 </div>
 
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
+    let savedPassword = "";
 
-    // Pobieranie danych z serwera
+    // Funkcja weryfikacji logowania na froncie
+    function checkLogin() {
+        const passwordInput = document.getElementById('adminPassword').value;
+        
+        if(passwordInput === "") {
+            alert("Hasło nie może być puste!");
+            return;
+        }
+
+        // Zapisujemy wpisane hasło do zmiennej, by słać je w nagłówkach do Render
+        savedPassword = passwordInput;
+        
+        // Ukrywamy ekran logowania, pokazujemy panel
+        document.getElementById('loginBlocker').style.display = 'none';
+        document.getElementById('adminMainContent').style.display = 'block';
+        
+        // Pobieramy dane z serwera
+        fetchApplications();
+    }
+
+    function handleKeyPress(e) {
+        if(e.key === 'Enter') {
+            checkLogin();
+        }
+    }
+
+    // Pobieranie danych z serwera z uwzględnieniem autoryzacji
     async function fetchApplications() {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`);
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
+                headers: {
+                    'Authorization': `Bearer ${savedPassword}`
+                }
+            });
             const result = await response.json();
             
             if(result.success) {
@@ -356,26 +434,14 @@
                 updateStats();
                 renderApplications(allApplications);
             } else {
-                alert('Błąd serwera podczas pobierania danych.');
+                alert('Błąd serwera: ' + result.error);
             }
         } catch (error) {
             console.error(error);
-            // Dane demonstracyjne na wypadek braku połączenia z backendem podczas testów lokalnych
-            allApplications = [
-                {
-                    id: 1, imie: "Jan", wiek: "21", miasto: "Kraków", discord_nick: "jano_ets", discord_id: "123456789012345",
-                    o_sobie: "Cześć, lubię symulatory, jeżdżę od 3 lat wieczorami.", godzin_ets2: "620h", firmy_wczesniej: "Brak", dlaczego_opuszczone: "-",
-                    posiada_trucksbook: "Tak", link_trucksbook: "https://trucksbook.eu", link_steam: "https://steamcommunity.com", posiada_promods: "Tak",
-                    dlc_mapowe: "Going East, Scandinavia, Italia", podmiana_dds: "Tak", dlaczego_my: "Bo macie fajną atmosferę", dlaczego_ciebie: "Jestem bezkonfliktowy",
-                    status: "oczekuje", zdjecia: ""
-                }
-            ];
-            updateStats();
-            renderApplications(allApplications);
+            alert('Błąd pobierania danych. Sprawdź konsolę przeglądarki lub upewnij się, czy backend na Render działa.');
         }
     }
 
-    // Aktualizacja liczników statystyk
     function updateStats() {
         document.getElementById('stat-total').innerText = allApplications.length;
         document.getElementById('stat-pending').innerText = allApplications.filter(a => a.status === 'oczekuje').length;
@@ -383,7 +449,6 @@
         document.getElementById('stat-rejected').innerText = allApplications.filter(a => a.status === 'odrzucone').length;
     }
 
-    // Wyświetlanie listy podań
     function renderApplications(apps) {
         const container = document.getElementById('appsListContainer');
         container.innerHTML = '';
@@ -415,7 +480,6 @@
         });
     }
 
-    // Wyszukiwarka i filtry
     function filterApplications() {
         const searchText = document.getElementById('searchBar').value.toLowerCase();
         const statusFilter = document.getElementById('statusFilter').value;
@@ -429,7 +493,6 @@
         renderApplications(filtered);
     }
 
-    // Otwieranie szczegółów (Modal)
     function openModal(id) {
         const app = allApplications.find(a => a.id === id);
         if(!app) return;
@@ -449,7 +512,6 @@
         document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my} \nDlaczego On: ${app.dlaczego_ciebie}`;
         document.getElementById('m-dlc').innerText = app.dlc_mapowe;
 
-        // Galeria zdjęć (parsowanie rozdzielonych znakiem '|')
         const galeria = document.getElementById('m-galeria');
         galeria.innerHTML = '';
         if(app.zdjecia) {
@@ -463,10 +525,9 @@
                 }
             });
         } else {
-            galeria.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Brak przesłanych zdjęć lub zły format</span>';
+            galeria.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Brak przesłanych zdjęć</span>';
         }
 
-        // Przyciski akcji w modalu
         const actionsDiv = document.getElementById('modalActionButtons');
         actionsDiv.innerHTML = '';
         if(app.status === 'oczekuje') {
@@ -485,14 +546,17 @@
         document.getElementById('appModal').style.display = 'none';
     }
 
-    // Zmiana statusu podania (Akceptacja / Odrzucenie)
+    // Zmiana statusu podania z przekazaniem tokenu autoryzacji
     async function changeStatus(id, newStatus) {
         if(!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
 
         try {
             const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${savedPassword}`
+                },
                 body: JSON.stringify({ status: newStatus })
             });
             const result = await response.json();
@@ -505,13 +569,10 @@
                 alert('Błąd serwera przy zmianie statusu: ' + result.error);
             }
         } catch (error) {
-            alert('Błąd komunikacji z serwerem.');
+            alert('Błąd komunikacji z serwerem. Upewnij się, że wpisane hasło administratora jest poprawne.');
             console.error(error);
         }
     }
-
-    // Inicjalizacja przy starcie strony
-    window.onload = fetchApplications;
 </script>
 </body>
 </html>
