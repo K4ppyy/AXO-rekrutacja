@@ -1,143 +1,172 @@
-<script>
-    const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
-    let allApplications = [];
-    let savedPassword = "";
-
-    function checkLogin() {
-        const passwordInput = document.getElementById('adminPassword').value.trim();
-        if(passwordInput === "") {
-            alert("Hasło nie może być puste!");
-            return;
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora | AXO Logistyka</title>
+    <link rel="icon" type="image/x-icon" href="Design/AXO_logo.ico">
+    <style>
+        :root {
+            --axo-red: #e31212;
+            --bg-dark: #121212;
+            --card-bg: #1a1a1a;
+            --input-bg: #262626;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --status-pending: #f1c40f;
+            --status-accepted: #2ecc71;
+            --status-rejected: #e74c3c;
         }
-        savedPassword = passwordInput;
-        document.getElementById('loginBlocker').style.display = 'none';
-        document.getElementById('adminMainContent').style.display = 'block';
-        fetchApplications();
-    }
 
-    function handleKeyPress(e) {
-        if(e.key === 'Enter') { checkLogin(); }
-    }
-
-    async function fetchApplications() {
-        const container = document.getElementById('appsListContainer');
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-                headers: { 'Authorization': `Bearer ${savedPassword}` }
-            });
-
-            if (!response.ok) {
-                if(response.status === 403 || response.status === 401) {
-                    throw new Error("Błędne hasło administratora!");
-                }
-                throw new Error(`Błąd statusu: ${response.status}`);
-            }
-
-            const result = await response.json();
-            if(result.success) {
-                allApplications = result.data || [];
-                updateStats();
-                renderApplications(allApplications);
-            } else {
-                alert('Błąd serwera: ' + result.error);
-            }
-        } catch (error) {
-            console.error(error);
-            container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">${error.message}</p>`;
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            padding: 20px;
+            margin: 0;
         }
-    }
 
-    function updateStats() {
-        document.getElementById('stat-total').innerText = allApplications.length;
-        document.getElementById('stat-pending').innerText = allApplications.filter(a => a.status === 'oczekuje').length;
-        document.getElementById('stat-accepted').innerText = allApplications.filter(a => a.status === 'zaakceptowane').length;
-        document.getElementById('stat-rejected').innerText = allApplications.filter(a => a.status === 'odrzucone').length;
-    }
-
-    function renderApplications(apps) {
-        const container = document.getElementById('appsListContainer');
-        container.innerHTML = '';
-        if(apps.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Brak podań w bazie.</p>';
-            return;
+        #loginBlocker {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        apps.forEach(app => {
-            const item = document.createElement('div');
-            item.className = 'app-item';
-            item.innerHTML = `
-                <div class="app-info">
-                    <h3>${app.imie} (${app.wiek} l.)</h3>
-                    <p>Discord: <strong>${app.discord_nick}</strong></p>
-                </div>
-                <div class="app-actions">
-                    <span class="status-badge ${app.status}">${app.status}</span>
-                    <button class="btn-view" onclick="openModal('${app.id}')">Zobacz</button>
-                </div>
-            `;
-            container.appendChild(item);
-        });
-    }
 
-    function filterApplications() {
-        const searchText = document.getElementById('searchBar').value.toLowerCase();
-        const statusFilter = document.getElementById('statusFilter').value;
-        const filtered = allApplications.filter(app => {
-            const matchesSearch = (app.discord_nick && app.discord_nick.toLowerCase().includes(searchText)) || (app.imie && app.imie.toLowerCase().includes(searchText));
-            const matchesStatus = statusFilter === 'wszystkie' || app.status === statusFilter;
-            return matchesSearch && matchesStatus;
-        });
-        renderApplications(filtered);
-    }
-
-    function openModal(id) {
-        const app = allApplications.find(a => String(a.id) === String(id));
-        if(!app) return;
-
-        document.getElementById('m-imie-wiek').innerText = `${app.imie} (${app.wiek} lat)`;
-        document.getElementById('m-miasto').innerText = app.miasto || '';
-        document.getElementById('m-discord-nick').innerText = app.discord_nick || '';
-        document.getElementById('m-discord-id').innerText = app.discord_id || '';
-        document.getElementById('m-godziny').innerText = app.godzin_ets2 || '';
-        document.getElementById('m-steam').href = app.link_steam || '#';
-        document.getElementById('m-tb').href = app.link_trucksbook || '#';
-        document.getElementById('m-promods-dds').innerText = `ProMods: ${app.posiada_promods} | DDS: ${app.podmiana_dds}`;
-        document.getElementById('m-osobie').innerText = app.o_sobie || '';
-        document.getElementById('m-firmy').innerText = app.firmy_wczesniej || '';
-        document.getElementById('m-dlaczego').innerText = app.dlaczego_my || '';
-        document.getElementById('m-dlc').innerText = app.dlc_mapowe || '';
-
-        const actionsDiv = document.getElementById('modalActionButtons');
-        actionsDiv.innerHTML = '';
-        if(app.status === 'oczekuje') {
-            actionsDiv.innerHTML = `
-                <button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
-                <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>
-            `;
-        } else {
-            actionsDiv.innerHTML = `<span>Status: ${app.status}</span>`;
+        .login-box {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-top: 4px solid var(--axo-red);
+            text-align: center;
+            width: 100%;
+            max-width: 380px;
         }
-        document.getElementById('appModal').style.display = 'flex';
-    }
 
-    function closeModal() { document.getElementById('appModal').style.display = 'none'; }
-
-    async function changeStatus(id, newStatus) {
-        if(!confirm(`Zmienić status na ${newStatus}?`)) return;
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
-                method: 'PATCH',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${savedPassword}`
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-            if(response.ok) {
-                closeModal();
-                fetchApplications();
-            }
-        } catch (error) {
-            alert('Błąd: ' + error.message);
+        .login-box img {
+            max-width: 120px;
+            margin-bottom: 20px;
+            border-radius: 8px;
         }
-    }
-</script>
+
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        #adminMainContent {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--axo-red);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-area img {
+            max-width: 50px;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 span { color: var(--axo-red); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--text-muted);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .stat-card.total { border-left-color: var(--text-main); }
+        .stat-card.pending { border-left-color: var(--status-pending); }
+        .stat-card.accepted { border-left-color: var(--status-accepted); }
+        .stat-card.rejected { border-left-color: var(--status-rejected); }
+
+        .stat-card h4 { margin: 0 0 5px 0; color: var(--text-muted); text-transform: uppercase; font-size: 12px; }
+        .stat-card .number { font-size: 28px; font-weight: bold; }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .search-input, .filter-select {
+            background: var(--input-bg);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-input { width: 300px; }
+
+        .applications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .app-item {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+            border: 1px solid #222;
+        }
+
+        .app-item:hover {
+            transform: translateX(5px);
+            border-color: #444;
+        }
+
+        .app-info h3 { margin:
