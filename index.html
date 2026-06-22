@@ -76,7 +76,6 @@
 
         input[type="text"],
         input[type="number"],
-        input[type="email"],
         input[type="url"],
         select,
         textarea {
@@ -161,7 +160,6 @@
 
     <form id="rekrutacjaForm" onsubmit="wyslijFormularz(event)">
         
-        <!-- Podstawowe dane -->
         <div class="form-group half">
             <label for="imie">Imię:</label>
             <input type="text" id="imie" required placeholder="np. Jan">
@@ -177,7 +175,6 @@
             <input type="text" id="miasto" required placeholder="np. Warszawa, Mazowieckie">
         </div>
 
-        <!-- Discord i NOWY EMAIL -->
         <div class="form-group half">
             <label for="discord_nick">Nazwa użytkownika Discord (Nick):</label>
             <input type="text" id="discord_nick" required placeholder="np. k4ppyy">
@@ -188,12 +185,6 @@
             <input type="text" id="discord_id" required placeholder="np. 384829103948572910">
         </div>
 
-        <div class="form-group">
-            <label for="email">Adres E-mail (na ten adres otrzymasz wynik rekrutacji):</label>
-            <input type="email" id="email" required placeholder="np. twoj-mail@gmail.com">
-        </div>
-
-        <!-- Gra -->
         <div class="form-group">
             <label for="godziny">Liczba godzin w ETS2 (na Steam):</label>
             <input type="number" id="godziny" required min="0" placeholder="np. 450">
@@ -226,7 +217,6 @@
             </select>
         </div>
 
-        <!-- Pytania otwarte -->
         <div class="form-group">
             <label for="osobie">Napisz kilka zdań o sobie:</label>
             <textarea id="osobie" required placeholder="Czym się zajmujesz, jakie masz zainteresowania..."></textarea>
@@ -257,7 +247,6 @@
             <textarea id="dlc" required placeholder="np. Going East, Scandinavia, Vive la France, Italia, Baltic, Black Sea, Iberia, West Balkans"></textarea>
         </div>
 
-        <!-- Upload Zdjęć -->
         <div class="form-group">
             <label>Zdjęcia Twojej ciężarówki / profilu (Opcjonalnie):</label>
             <div class="file-upload-box" onclick="document.getElementById('fileInput').click()">
@@ -274,7 +263,6 @@
 <script>
     let listaZdjec = [];
 
-    // Funkcja do przetwarzania dodawanych zdjęć na format Base64
     function handleFileSelect(event) {
         const files = event.target.files;
         const container = document.getElementById('imagePreviewContainer');
@@ -294,17 +282,16 @@
         }
     }
 
-    // GŁÓWNA FUNKCJA WYSYŁANIA DANYCH DO BACKENDU
     async function wyslijFormularz(event) {
         event.preventDefault();
 
-        // Przygotowanie danych i wymuszenie czystych liczb za pomocą parseInt()
+        const zdjeciaArray = typeof listaZdjec !== 'undefined' ? listaZdjec : [];
+
         const data = {
             imie: document.getElementById('imie').value.trim(),
             miasto: document.getElementById('miasto').value.trim(),
             discord_nick: document.getElementById('discord_nick').value.trim(),
             discord_id: document.getElementById('discord_id').value.trim(),
-            email: document.getElementById('email').value.trim(), // Zbieranie adresu mailowego
             link_steam: document.getElementById('steam').value.trim(),
             link_trucksbook: document.getElementById('trucksbook').value.trim(),
             posiada_promods: document.getElementById('promods').value,
@@ -315,14 +302,14 @@
             dlaczego_my: document.getElementById('dlaczego_my').value.trim(),
             dlaczego_ciebie: document.getElementById('dlaczego_wybrac').value.trim(),
             dlc_mapowe: document.getElementById('dlc').value.trim(),
-            zdjecia: listaZdjec,
+            zdjecia: zdjeciaArray,
+            email: "", // Brak pola w HTML, wysyłamy pusty tekst, żeby backend się nie wysypał
             
-            // Konwersja na liczby – rozwiązuje błąd bazy danych (invalid input syntax for type integer)
+            // BEZPIECZNA KONWERSJA NA INT (Baza danych na Renderze już nie wywali błędu)
             wiek: parseInt(document.getElementById('wiek').value, 10),
             godzin_ets2: parseInt(document.getElementById('godziny').value, 10)
         };
 
-        // Dodatkowe zabezpieczenie walidacyjne na wypadek błędnego wpisania liczb
         if (isNaN(data.wiek) || isNaN(data.godzin_ets2)) {
             alert("Pola Wiek oraz Liczba godzin muszą zawierać poprawne cyfry!");
             return;
@@ -337,7 +324,7 @@
 
             const result = await response.json();
             if (result.success) {
-                alert('Zgłoszenie rekrutacyjne zostało wysłane pomyślnie! Wynik otrzymasz na podany adres e-mail.');
+                alert('Zgłoszenie rekrutacyjne zostało wysłane pomyślnie!');
                 document.getElementById('rekrutacjaForm').reset();
                 document.getElementById('imagePreviewContainer').innerHTML = '';
                 listaZdjec = [];
