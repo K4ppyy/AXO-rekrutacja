@@ -386,12 +386,16 @@
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
-    let savedPassword = "";
+    let savedPassword = "AXO_Admin_2026";
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
         if (passwordInput === "") {
             alert("Hasło nie może być puste!");
+            return;
+        }
+        if (passwordInput !== "AXO_Admin_2026") {
+            alert("Niepoprawne hasło administratora!");
             return;
         }
         savedPassword = passwordInput;
@@ -409,8 +413,12 @@
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-                headers: { 'Authorization': `Bearer ${savedPassword}` }
+            // Próba pobrania z endpointu admina, który prawdopodobnie jest poprawny na obecnym backendzie
+            const response = await fetch(`${BACKEND_URL}/api/admin/podania`, {
+                headers: { 
+                    'Authorization': `Bearer ${savedPassword}`,
+                    'X-Admin-Password': savedPassword
+                }
             });
 
             if (!response.ok) {
@@ -421,18 +429,18 @@
             }
 
             const result = await response.json();
-            if (result.success) {
-                allApplications = result.data || [];
+            if (result.success || Array.isArray(result)) {
+                allApplications = Array.isArray(result) ? result : (result.data || []);
                 updateStats();
                 renderApplications(allApplications);
             } else {
-                alert('Błąd serwera: ' + result.error);
+                alert('Błąd serwera: ' + (result.error || 'Nieznany błąd danych'));
             }
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
                 Komunikat błędu: ${error.message}<br>
-                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że wpisujesz poprawne hasło administratora.</span>
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że wpisujesz poprawne hasło administratora lub zweryfikuj endpointy na backendzie.</span>
             </p>`;
         }
     }
@@ -456,7 +464,7 @@
             item.className = 'app-item';
             item.innerHTML = `
                 <div class="app-info">
-                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto || 'Brak danych'}</span></h3>
+                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--xo-red)">${app.miasto || 'Brak danych'}</span></h3>
                     <p>Discord: <strong>${app.discord_nick || 'Brak'}</strong></p>
                     <div class="meta-tags">
                         <span>Godziny: ${app.godzin_ets2 || '0'}</span>
@@ -547,11 +555,12 @@
         if (!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
+            const response = await fetch(`${BACKEND_URL}/api/admin/podania/${id}`, {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${savedPassword}`
+                    'Authorization': `Bearer ${savedPassword}`,
+                    'X-Admin-Password': savedPassword
                 },
                 body: JSON.stringify({ status: newStatus })
             });
