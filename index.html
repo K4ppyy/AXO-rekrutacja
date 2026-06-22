@@ -100,7 +100,7 @@
             min-height: 100px;
         }
 
-        /* CHECKBOXY / KAFELKI WYBORU (Z Twojego oryginalnego projektu) */
+        /* CHECKBOXY / KAFELKI WYBORU */
         .checkbox-group {
             display: flex;
             gap: 10px;
@@ -201,14 +201,9 @@
             <input type="number" id="wiek" required min="1" max="99" placeholder="np. 18">
         </div>
 
-        <div class="form-group half">
+        <div class="form-group">
             <label for="miasto">Miejscowość / Województwo:</label>
             <input type="text" id="miasto" required placeholder="np. Warszawa, Mazowieckie">
-        </div>
-
-        <div class="form-group half">
-            <label for="email">Adres E-mail kandydata:</label>
-            <input type="email" id="email" required placeholder="np. twoj-mail@gmail.com">
         </div>
 
         <div class="form-group half">
@@ -219,6 +214,11 @@
         <div class="form-group half">
             <label for="discord_id">Identyfikator Discord (ID płatka śniegu):</label>
             <input type="text" id="discord_id" required placeholder="np. 384829103948572910">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Adres E-mail kandydata:</label>
+            <input type="email" id="email" required placeholder="np. twoj-mail@gmail.com">
         </div>
 
         <div class="form-group">
@@ -276,8 +276,8 @@
         </div>
 
         <div class="form-group">
-            <label for="dlaczego_wybrac">Dlaczego to właśnie Ciebie powinniśmy wybrać?</label>
-            <textarea id="dlaczego_wybrac" required placeholder="Twoje mocne strony, co wniesiesz do zespołu..."></textarea>
+            <label for="dlaczego_ciebie">Dlaczego to właśnie Ciebie powinniśmy wybrać?</label>
+            <textarea id="dlaczego_ciebie" required placeholder="Twoje mocne strony, co wniesiesz do zespołu..."></textarea>
         </div>
 
         <div class="form-group">
@@ -301,7 +301,6 @@
 <script>
     let listaZdjec = [];
 
-    // Logika obsługi kafelków wyboru
     function selectOption(inputId, element) {
         const parent = element.parentElement;
         const buttons = parent.querySelectorAll('.checkbox-btn');
@@ -346,14 +345,12 @@
             posiada_promods: document.getElementById('promods').value,
             podmiana_dds: document.getElementById('dds').value,
             o_sobie: document.getElementById('osobie').value.trim(),
-            firmy_wczesniej: document.getElementById('firmy').value.trim(), // Poprawiona literówka z backendu
+            firmy_wczesniej: document.getElementById('firmy').value.trim(),
             dlaczego_opuszczone: document.getElementById('powod').value.trim(),
             dlaczego_my: document.getElementById('dlaczego_my').value.trim(),
-            dlaczego_ciebie: document.getElementById('dlaczego_wybrac').value.trim(),
+            dlaczego_ciebie: document.getElementById('dlaczego_ciebie').value.trim(),
             dlc_mapowe: document.getElementById('dlc').value.trim(),
             zdjecia: zdjeciaArray,
-            
-            // Bezpieczna konwersja na liczby całkowite
             wiek: parseInt(document.getElementById('wiek').value, 10),
             godzin_ets2: parseInt(document.getElementById('godziny').value, 10)
         };
@@ -377,7 +374,6 @@
                 document.getElementById('imagePreviewContainer').innerHTML = '';
                 listaZdjec = [];
                 
-                // Reset przycisków wyboru do domyślnych (Tak)
                 document.querySelectorAll('.checkbox-group').forEach(group => {
                     const buttons = group.querySelectorAll('.checkbox-btn');
                     buttons.forEach((btn, idx) => {
