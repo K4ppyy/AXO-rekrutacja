@@ -409,8 +409,9 @@
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-                headers: { 'Authorization': `Bearer ${savedPassword}` }
+            // Zmieniono endpoint na poprawną ścieżkę pobierania dla admina
+            const response = await fetch(`${BACKEND_URL}/api/admin/podania`, {
+                headers: { 'Authorization': savedPassword }
             });
 
             if (!response.ok) {
@@ -421,13 +422,11 @@
             }
 
             const result = await response.json();
-            if (result.success) {
-                allApplications = result.data || [];
-                updateStats();
-                renderApplications(allApplications);
-            } else {
-                alert('Błąd serwera: ' + result.error);
-            }
+            // Serwer zwraca tablicę bezpośrednio lub obiekt z sukcesem - ten zapis obsłuży obie opcje
+            allApplications = Array.isArray(result) ? result : (result.data || []);
+            
+            updateStats();
+            renderApplications(allApplications);
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
@@ -438,10 +437,11 @@
     }
 
     function updateStats() {
+        // Normalizacja statusów do małych liter w statystykach, aby dopasować bazy danych
         document.getElementById('stat-total').innerText = allApplications.length;
-        document.getElementById('stat-pending').innerText = allApplications.filter(a => a.status === 'oczekuje').length;
-        document.getElementById('stat-accepted').innerText = allApplications.filter(a => a.status === 'zaakceptowane').length;
-        document.getElementById('stat-rejected').innerText = allApplications.filter(a => a.status === 'odrzucone').length;
+        document.getElementById('stat-pending').innerText = allApplications.filter(a => String(a.status).toLowerCase() === 'oczekuje').length;
+        document.getElementById('stat-accepted').innerText = allApplications.filter(a => String(a.status).toLowerCase() === 'zaakceptowane').length;
+        document.getElementById('stat-rejected').innerText = allApplications.filter(a => String(a.status).toLowerCase() === 'odrzucone').length;
     }
 
     function renderApplications(apps) {
@@ -452,6 +452,7 @@
             return;
         }
         apps.forEach(app => {
+            const currentStatus = String(app.status || 'Oczekuje').toLowerCase();
             const item = document.createElement('div');
             item.className = 'app-item';
             item.innerHTML = `
@@ -465,7 +466,7 @@
                     </div>
                 </div>
                 <div class="app-actions">
-                    <span class="status-badge ${app.status || 'oczekuje'}">${app.status || 'oczekuje'}</span>
+                    <span class="status-badge ${currentStatus}">${currentStatus}</span>
                     <button class="btn-view" onclick="openModal('${app.id}')">Zobacz</button>
                 </div>
             `;
@@ -478,7 +479,7 @@
         const statusFilter = document.getElementById('statusFilter').value;
         const filtered = allApplications.filter(app => {
             const matchesSearch = (app.discord_nick && app.discord_nick.toLowerCase().includes(searchText)) || (app.imie && app.imie.toLowerCase().includes(searchText));
-            const matchesStatus = statusFilter === 'wszystkie' || app.status === statusFilter;
+            const matchesStatus = statusFilter === 'wszystkie' || String(app.status).toLowerCase() === statusFilter;
             return matchesSearch && matchesStatus;
         });
         renderApplications(filtered);
@@ -499,7 +500,7 @@
         document.getElementById('m-osobie').innerText = app.o_sobie || 'Brak opisu';
         document.getElementById('m-firmy').innerText = `Firmy: ${app.firmy_wczesniej || 'Brak'} \nPowód odejścia: ${app.dlaczego_opuszczone || '-'}`;
         document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my || '-'} \nDlaczego On: ${app.dlaczego_ciebie || '-'}`;
-        document.getElementById('m-dlc').innerText = app.dlc_mapowe || 'Brak';
+        document.getElementById('m-dlc').innerText = app.dlc || app.dlc_mapowe || 'Brak';
 
         const galeria = document.getElementById('m-galeria');
         galeria.innerHTML = '';
@@ -528,7 +529,9 @@
 
         const actionsDiv = document.getElementById('modalActionButtons');
         actionsDiv.innerHTML = '';
-        if (app.status === 'oczekuje') {
+        
+        const normalizedStatus = String(app.status || 'Oczekuje').toLowerCase();
+        if (normalizedStatus === 'oczekuje') {
             actionsDiv.innerHTML = `
                 <button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
                 <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>
@@ -544,16 +547,20 @@
     }
 
     async function changeStatus(id, newStatus) {
-        if (!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
+        if (!confirm(`Czy na pewno chcesz podjąć decyzję: ${newStatus}?`)) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
-                method: 'PATCH',
+            // Skierowanie zapytania na poprawny endpoint decyzji przesyłający webhooka
+            const response = await fetch(`${BACKEND_URL}/api/admin/decyzja`, {
+                method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${savedPassword}`
+                    'Authorization': savedPassword
                 },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify({ 
+                    id: id,
+                    decyzja: newStatus 
+                })
             });
 
             if (!response.ok) {
@@ -562,7 +569,7 @@
 
             const result = await response.json();
             if (result.success) {
-                alert('Status podania zaktualizowany pomyślnie!');
+                alert('Decyzja została podjęta! Powiadomienie wysłano na Discord.');
                 closeModal();
                 fetchApplications();
             } else {
