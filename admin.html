@@ -386,7 +386,7 @@
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
-    const TOKEN = 'AXO_Admin_2026'; // Sparowane ze zmienną na Renderze
+    const TOKEN = 'AXO_Admin_2026'; // Sparowane ze zmienną ADMIN_TOKEN na Renderze
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
@@ -413,7 +413,6 @@
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            // Strzał do prawidłowego i jedynego punktu końcowego
             const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
                 headers: { 
                     'Authorization': `Bearer ${TOKEN}`,
@@ -422,20 +421,11 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Serwer odpowiedział kodem błędu: ${response.status}`);
+                throw new Error(`Serwer zwrócił kod: ${response.status}`);
             }
 
             const result = await response.json();
-            
-            if (Array.isArray(result)) {
-                allApplications = result;
-            } else if (result && Array.isArray(result.data)) {
-                allApplications = result.data;
-            } else if (result && result.success && Array.isArray(result.data)) {
-                allApplications = result.data;
-            } else {
-                allApplications = [];
-            }
+            allApplications = Array.isArray(result) ? result : (result.data || []);
 
             updateStats();
             renderApplications(allApplications);
@@ -445,10 +435,8 @@
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
                 Błąd połączenia z backendem!<br>
                 <span style="color: var(--text-muted); font-size: 14px; font-weight: normal;">
-                    Twój serwer na Renderze zgłasza krytyczną awarię składniową:<br>
-                    <b style="color:#ff6b6b">Error: Cannot find module 'resend'</b><br><br>
-                    Zaloguj się na swojego Rendera i zainstaluj brakujący moduł komendą: <br>
-                    <code style="background:#000; padding:4px 8px; border-radius:4px; color:#2ecc71">npm install resend</code> w kodzie backendu.
+                    Szczegóły błędu: ${error.message}<br><br>
+                    Upewnij się, że wgrałeś nowy plik server.js bez resend i status aplikacji na Renderze to zielone "Live".
                 </span>
             </p>`;
         }
@@ -473,7 +461,7 @@
             item.className = 'app-item';
             item.innerHTML = `
                 <div class="app-info">
-                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--xo-red)">${app.miasto || 'Brak danych'}</span></h3>
+                    <h3>${app.imie || 'Nieznajomy'} (${app.wiek || '?'} l.) - <span style="color: var(--xo-red)">${app.miasto || 'Brak danych'}</span></h3>
                     <p>Discord: <strong>${app.discord_nick || 'Brak'}</strong></p>
                     <div class="meta-tags">
                         <span>Godziny: ${app.godzin_ets2 || '0'}</span>
@@ -505,7 +493,7 @@
         const app = allApplications.find(a => String(a.id) === String(id));
         if (!app) return;
 
-        document.getElementById('m-imie-wiek').innerText = `${app.imie} (${app.wiek} lat)`;
+        document.getElementById('m-imie-wiek').innerText = `${app.imie || 'Brak'} (${app.wiek || '?'} lat)`;
         document.getElementById('m-miasto').innerText = app.miasto || 'Brak danych';
         document.getElementById('m-discord-nick').innerText = app.discord_nick || 'Brak';
         document.getElementById('m-discord-id').innerText = app.discord_id || 'Brak';
@@ -575,10 +563,10 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Serwer zwrócił kod błędu ${response.status}`);
+                throw new Error(`Serwer zwrócił kod: ${response.status}`);
             }
 
-            alert('Status podania zaktualizowany pomyślnie! Webhook wysłany.');
+            alert('Status podania zaktualizowany pomyślnie!');
             closeModal();
             fetchApplications();
         } catch (error) {
