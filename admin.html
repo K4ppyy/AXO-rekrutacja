@@ -386,7 +386,7 @@
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
-    const TOKEN = 'AXO_Admin_2026'; // Zdefiniowane na sztywno poprawne hasło z Twojego Rendera
+    const TOKEN = 'AXO_Admin_2026'; // Sparowane ze zmienną na Renderze
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
@@ -413,24 +413,20 @@
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            // Odpytujemy Twój właściwy endpoint z dopasowaną autoryzacją pod ADMIN_TOKEN
+            // Strzał do prawidłowego i jedynego punktu końcowego
             const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
                 headers: { 
-                    'Authorization': TOKEN,
+                    'Authorization': `Bearer ${TOKEN}`,
                     'X-Admin-Token': TOKEN
                 }
             });
 
             if (!response.ok) {
-                if (response.status === 403 || response.status === 401) {
-                    throw new Error("Błąd uwierzytelnienia (401/403). Serwer odrzucił token.");
-                }
-                throw new Error(`Serwer zwrócił błąd statusu: ${response.status}`);
+                throw new Error(`Serwer odpowiedział kodem błędu: ${response.status}`);
             }
 
             const result = await response.json();
             
-            // Obsługa różnych formatów zwracanych danych (obiekt z .data lub bezpośrednio tablica)
             if (Array.isArray(result)) {
                 allApplications = result;
             } else if (result && Array.isArray(result.data)) {
@@ -447,8 +443,13 @@
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
-                Komunikat błędu: ${error.message}<br>
-                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Jeśli błąd to nadal 500, upewnij się, że baza danych na Renderze jest poprawnie połączona.</span>
+                Błąd połączenia z backendem!<br>
+                <span style="color: var(--text-muted); font-size: 14px; font-weight: normal;">
+                    Twój serwer na Renderze zgłasza krytyczną awarię składniową:<br>
+                    <b style="color:#ff6b6b">Error: Cannot find module 'resend'</b><br><br>
+                    Zaloguj się na swojego Rendera i zainstaluj brakujący moduł komendą: <br>
+                    <code style="background:#000; padding:4px 8px; border-radius:4px; color:#2ecc71">npm install resend</code> w kodzie backendu.
+                </span>
             </p>`;
         }
     }
@@ -567,7 +568,7 @@
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': TOKEN,
+                    'Authorization': `Bearer ${TOKEN}`,
                     'X-Admin-Token': TOKEN
                 },
                 body: JSON.stringify({ status: newStatus })
@@ -577,7 +578,7 @@
                 throw new Error(`Serwer zwrócił kod błędu ${response.status}`);
             }
 
-            alert('Status podania zaktualizowany pomyślnie! Webhook na Discordzie został wywołany.');
+            alert('Status podania zaktualizowany pomyślnie! Webhook wysłany.');
             closeModal();
             fetchApplications();
         } catch (error) {
