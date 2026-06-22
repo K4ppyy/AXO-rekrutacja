@@ -386,7 +386,7 @@
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
-    const TOKEN = 'AXO_Admin_2026'; // Sparowane ze zmienną ADMIN_TOKEN na Renderze
+    let savedPassword = "";
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
@@ -394,11 +394,7 @@
             alert("Hasło nie może być puste!");
             return;
         }
-        if (passwordInput !== TOKEN) {
-            alert("Niepoprawne hasło administratora!");
-            return;
-        }
-        
+        savedPassword = passwordInput;
         document.getElementById('loginBlocker').style.display = 'none';
         document.getElementById('adminMainContent').style.display = 'block';
         fetchApplications();
@@ -414,30 +410,29 @@
         const container = document.getElementById('appsListContainer');
         try {
             const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
-                headers: { 
-                    'Authorization': `Bearer ${TOKEN}`,
-                    'X-Admin-Token': TOKEN
-                }
+                headers: { 'Authorization': `Bearer ${savedPassword}` }
             });
 
             if (!response.ok) {
-                throw new Error(`Serwer zwrócił kod: ${response.status}`);
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error("Błędne hasło administratora! Spróbuj ponownie.");
+                }
+                throw new Error(`Serwer zwrócił błąd statusu: ${response.status}`);
             }
 
             const result = await response.json();
-            allApplications = Array.isArray(result) ? result : (result.data || []);
-
-            updateStats();
-            renderApplications(allApplications);
-
+            if (result.success) {
+                allApplications = result.data || [];
+                updateStats();
+                renderApplications(allApplications);
+            } else {
+                alert('Błąd serwera: ' + result.error);
+            }
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
-                Błąd połączenia z backendem!<br>
-                <span style="color: var(--text-muted); font-size: 14px; font-weight: normal;">
-                    Szczegóły błędu: ${error.message}<br><br>
-                    Upewnij się, że wgrałeś nowy plik server.js bez resend i status aplikacji na Renderze to zielone "Live".
-                </span>
+                Komunikat błędu: ${error.message}<br>
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że wpisujesz poprawne hasło administratora.</span>
             </p>`;
         }
     }
@@ -461,7 +456,7 @@
             item.className = 'app-item';
             item.innerHTML = `
                 <div class="app-info">
-                    <h3>${app.imie || 'Nieznajomy'} (${app.wiek || '?'} l.) - <span style="color: var(--xo-red)">${app.miasto || 'Brak danych'}</span></h3>
+                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto || 'Brak danych'}</span></h3>
                     <p>Discord: <strong>${app.discord_nick || 'Brak'}</strong></p>
                     <div class="meta-tags">
                         <span>Godziny: ${app.godzin_ets2 || '0'}</span>
@@ -493,7 +488,7 @@
         const app = allApplications.find(a => String(a.id) === String(id));
         if (!app) return;
 
-        document.getElementById('m-imie-wiek').innerText = `${app.imie || 'Brak'} (${app.wiek || '?'} lat)`;
+        document.getElementById('m-imie-wiek').innerText = `${app.imie} (${app.wiek} lat)`;
         document.getElementById('m-miasto').innerText = app.miasto || 'Brak danych';
         document.getElementById('m-discord-nick').innerText = app.discord_nick || 'Brak';
         document.getElementById('m-discord-id').innerText = app.discord_id || 'Brak';
@@ -533,7 +528,7 @@
 
         const actionsDiv = document.getElementById('modalActionButtons');
         actionsDiv.innerHTML = '';
-        if (app.status === 'oczekuje' || !app.status) {
+        if (app.status === 'oczekuje') {
             actionsDiv.innerHTML = `
                 <button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
                 <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>
@@ -556,19 +551,23 @@
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${TOKEN}`,
-                    'X-Admin-Token': TOKEN
+                    'Authorization': `Bearer ${savedPassword}`
                 },
                 body: JSON.stringify({ status: newStatus })
             });
 
             if (!response.ok) {
-                throw new Error(`Serwer zwrócił kod: ${response.status}`);
+                throw new Error(`Serwer zwrócił kod błędu ${response.status}`);
             }
 
-            alert('Status podania zaktualizowany pomyślnie!');
-            closeModal();
-            fetchApplications();
+            const result = await response.json();
+            if (result.success) {
+                alert('Status podania zaktualizowany pomyślnie!');
+                closeModal();
+                fetchApplications();
+            } else {
+                alert('Błąd serwera: ' + result.error);
+            }
         } catch (error) {
             alert('Wystąpił błąd zapisu: ' + error.message);
             console.error(error);
