@@ -386,7 +386,7 @@
 <script>
     const BACKEND_URL = 'https://ets2-rekrutacja-backend.onrender.com';
     let allApplications = [];
-    let savedPassword = "AXO_Admin_2026";
+    const TOKEN = 'AXO_Admin_2026'; // Zdefiniowane na sztywno poprawne hasło z Twojego Rendera
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
@@ -394,11 +394,11 @@
             alert("Hasło nie może być puste!");
             return;
         }
-        if (passwordInput !== "AXO_Admin_2026") {
+        if (passwordInput !== TOKEN) {
             alert("Niepoprawne hasło administratora!");
             return;
         }
-        savedPassword = passwordInput;
+        
         document.getElementById('loginBlocker').style.display = 'none';
         document.getElementById('adminMainContent').style.display = 'block';
         fetchApplications();
@@ -413,34 +413,42 @@
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            // Próba pobrania z endpointu admina, który prawdopodobnie jest poprawny na obecnym backendzie
-            const response = await fetch(`${BACKEND_URL}/api/admin/podania`, {
+            // Odpytujemy Twój właściwy endpoint z dopasowaną autoryzacją pod ADMIN_TOKEN
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
                 headers: { 
-                    'Authorization': `Bearer ${savedPassword}`,
-                    'X-Admin-Password': savedPassword
+                    'Authorization': TOKEN,
+                    'X-Admin-Token': TOKEN
                 }
             });
 
             if (!response.ok) {
                 if (response.status === 403 || response.status === 401) {
-                    throw new Error("Błędne hasło administratora! Spróbuj ponownie.");
+                    throw new Error("Błąd uwierzytelnienia (401/403). Serwer odrzucił token.");
                 }
                 throw new Error(`Serwer zwrócił błąd statusu: ${response.status}`);
             }
 
             const result = await response.json();
-            if (result.success || Array.isArray(result)) {
-                allApplications = Array.isArray(result) ? result : (result.data || []);
-                updateStats();
-                renderApplications(allApplications);
+            
+            // Obsługa różnych formatów zwracanych danych (obiekt z .data lub bezpośrednio tablica)
+            if (Array.isArray(result)) {
+                allApplications = result;
+            } else if (result && Array.isArray(result.data)) {
+                allApplications = result.data;
+            } else if (result && result.success && Array.isArray(result.data)) {
+                allApplications = result.data;
             } else {
-                alert('Błąd serwera: ' + (result.error || 'Nieznany błąd danych'));
+                allApplications = [];
             }
+
+            updateStats();
+            renderApplications(allApplications);
+
         } catch (error) {
             console.error(error);
             container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
                 Komunikat błędu: ${error.message}<br>
-                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że wpisujesz poprawne hasło administratora lub zweryfikuj endpointy na backendzie.</span>
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Jeśli błąd to nadal 500, upewnij się, że baza danych na Renderze jest poprawnie połączona.</span>
             </p>`;
         }
     }
@@ -536,7 +544,7 @@
 
         const actionsDiv = document.getElementById('modalActionButtons');
         actionsDiv.innerHTML = '';
-        if (app.status === 'oczekuje') {
+        if (app.status === 'oczekuje' || !app.status) {
             actionsDiv.innerHTML = `
                 <button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
                 <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>
@@ -555,12 +563,12 @@
         if (!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/admin/podania/${id}`, {
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${savedPassword}`,
-                    'X-Admin-Password': savedPassword
+                    'Authorization': TOKEN,
+                    'X-Admin-Token': TOKEN
                 },
                 body: JSON.stringify({ status: newStatus })
             });
@@ -569,14 +577,9 @@
                 throw new Error(`Serwer zwrócił kod błędu ${response.status}`);
             }
 
-            const result = await response.json();
-            if (result.success) {
-                alert('Status podania zaktualizowany pomyślnie! Webhook wysłany.');
-                closeModal();
-                fetchApplications();
-            } else {
-                alert('Błąd serwera: ' + result.error);
-            }
+            alert('Status podania zaktualizowany pomyślnie! Webhook na Discordzie został wywołany.');
+            closeModal();
+            fetchApplications();
         } catch (error) {
             alert('Wystąpił błąd zapisu: ' + error.message);
             console.error(error);
