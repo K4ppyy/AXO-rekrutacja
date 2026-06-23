@@ -206,6 +206,7 @@
         .btn-view:hover, .btn-login:hover { background: #b80f0f; }
         .btn-login { width: 100%; padding: 12px; text-transform: uppercase; }
 
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -311,10 +312,22 @@
     </header>
 
     <div class="stats-grid">
-        <div class="stat-card total"><h4>Wszystkie podania</h4><div class="number" id="stat-total">0</div></div>
-        <div class="stat-card pending"><h4>Oczekujące</h4><div class="number" id="stat-pending">0</div></div>
-        <div class="stat-card accepted"><h4>Zaakceptowane</h4><div class="number" id="stat-accepted">0</div></div>
-        <div class="stat-card rejected"><h4>Odrzucone</h4><div class="number" id="stat-rejected">0</div></div>
+        <div class="stat-card total">
+            <h4>Wszystkie podania</h4>
+            <div class="number" id="stat-total">0</div>
+        </div>
+        <div class="stat-card pending">
+            <h4>Oczekujące</h4>
+            <div class="number" id="stat-pending">0</div>
+        </div>
+        <div class="stat-card accepted">
+            <h4>Zaakceptowane</h4>
+            <div class="number" id="stat-accepted">0</div>
+        </div>
+        <div class="stat-card rejected">
+            <h4>Odrzucone</h4>
+            <div class="number" id="stat-rejected">0</div>
+        </div>
     </div>
 
     <div class="controls">
@@ -335,7 +348,7 @@
 <div class="modal" id="appModal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle" style="margin-top:0; margin-bottom: 20px;">Szczegóły podania</h2>
+        <h2 style="margin-top:0; margin-bottom: 20px;">Szczegóły Podania rekrutacyjnego</h2>
         
         <div class="modal-section grid-2col">
             <div class="data-field"><label>Imię i Wiek</label><div id="m-imie-wiek"></div></div>
@@ -377,27 +390,51 @@
 
     function checkLogin() {
         const passwordInput = document.getElementById('adminPassword').value.trim();
-        if (passwordInput === "") { alert("Hasło nie może być puste!"); return; }
+        if (passwordInput === "") {
+            alert("Hasło nie może być puste!");
+            return;
+        }
         savedPassword = passwordInput;
         document.getElementById('loginBlocker').style.display = 'none';
         document.getElementById('adminMainContent').style.display = 'block';
         fetchApplications();
     }
 
-    function handleKeyPress(e) { if (e.key === 'Enter') checkLogin(); }
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') { 
+            checkLogin(); 
+        }
+    }
 
     async function fetchApplications() {
         const container = document.getElementById('appsListContainer');
         try {
-            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, { headers: { 'Authorization': `Bearer ${savedPassword}` } });
-            if (!response.ok) throw new Error("Błędne hasło administratora!");
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja`, {
+                headers: { 'Authorization': `Bearer ${savedPassword}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error("Błędne hasło administratora! Spróbuj ponownie.");
+                }
+                throw new Error(`Serwer zwrócił błąd statusu: ${response.status}`);
+            }
+
             const result = await response.json();
             if (result.success) {
                 allApplications = result.data || [];
                 updateStats();
                 renderApplications(allApplications);
+            } else {
+                alert('Błąd serwera: ' + result.error);
             }
-        } catch (error) { container.innerHTML = `<p style="text-align:center; color:red;">${error.message}</p>`; }
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = `<p style="text-align: center; color: var(--status-rejected); font-weight: bold;">
+                Komunikat błędu: ${error.message}<br>
+                <span style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Upewnij się, że wpisujesz poprawne hasło administratora.</span>
+            </p>`;
+        }
     }
 
     function updateStats() {
@@ -410,23 +447,25 @@
     function renderApplications(apps) {
         const container = document.getElementById('appsListContainer');
         container.innerHTML = '';
+        if (apps.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Brak podań w bazie.</p>';
+            return;
+        }
         apps.forEach(app => {
             const item = document.createElement('div');
             item.className = 'app-item';
             item.innerHTML = `
                 <div class="app-info">
-                    <h3 style="display: flex; align-items: center; gap: 10px;">
-                        <span style="color: var(--text-muted); font-size: 14px;">#${app.id}</span>
-                        ${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto || 'Brak danych'}</span>
-                    </h3>
+                    <h3>${app.imie} (${app.wiek} l.) - <span style="color: var(--axo-red)">${app.miasto || 'Brak danych'}</span></h3>
                     <p>Discord: <strong>${app.discord_nick || 'Brak'}</strong></p>
                     <div class="meta-tags">
                         <span>Godziny: ${app.godzin_ets2 || '0'}</span>
                         <span>TrucksBook: ${app.posiada_trucksbook || 'Nie'}</span>
+                        <span>ProMods: ${app.posiada_promods || 'Nie'}</span>
                     </div>
                 </div>
                 <div class="app-actions">
-                    <span class="status-badge ${app.status}">${app.status}</span>
+                    <span class="status-badge ${app.status || 'oczekuje'}">${app.status || 'oczekuje'}</span>
                     <button class="btn-view" onclick="openModal('${app.id}')">Zobacz</button>
                 </div>
             `;
@@ -448,50 +487,91 @@
     function openModal(id) {
         const app = allApplications.find(a => String(a.id) === String(id));
         if (!app) return;
-        
-        document.getElementById('modalTitle').innerText = `Podanie #${app.id} - Szczegóły`;
+
         document.getElementById('m-imie-wiek').innerText = `${app.imie} (${app.wiek} lat)`;
-        document.getElementById('m-miasto').innerText = app.miasto || 'Brak';
+        document.getElementById('m-miasto').innerText = app.miasto || 'Brak danych';
         document.getElementById('m-discord-nick').innerText = app.discord_nick || 'Brak';
         document.getElementById('m-discord-id').innerText = app.discord_id || 'Brak';
         document.getElementById('m-godziny').innerText = app.godzin_ets2 || '0';
         document.getElementById('m-steam').href = app.link_steam || '#';
         document.getElementById('m-tb').href = app.link_trucksbook || '#';
-        document.getElementById('m-promods-dds').innerText = `PM: ${app.posiada_promods || 'Nie'} | DDS: ${app.podmiana_dds || 'Nie'}`;
-        document.getElementById('m-osobie').innerText = app.o_sobie || 'Brak';
-        document.getElementById('m-firmy').innerText = `Firmy: ${app.firmy_wczesniej || 'Brak'} | Powód: ${app.dlaczego_opuszczone || '-'}`;
-        document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my || '-'} | Dlaczego On: ${app.dlaczego_ciebie || '-'}`;
+        document.getElementById('m-promods-dds').innerText = `ProMods: ${app.posiada_promods || 'Nie'} | Ogarnia DDS: ${app.podmiana_dds || 'Nie'}`;
+        document.getElementById('m-osobie').innerText = app.o_sobie || 'Brak opisu';
+        document.getElementById('m-firmy').innerText = `Firmy: ${app.firmy_wczesniej || 'Brak'} \nPowód odejścia: ${app.dlaczego_opuszczone || '-'}`;
+        document.getElementById('m-dlaczego').innerText = `Dlaczego My: ${app.dlaczego_my || '-'} \nDlaczego On: ${app.dlaczego_ciebie || '-'}`;
         document.getElementById('m-dlc').innerText = app.dlc_mapowe || 'Brak';
+
+        const galeria = document.getElementById('m-galeria');
+        galeria.innerHTML = '';
         
-        const galeria = document.getElementById('m-galeria'); galeria.innerHTML = '';
         if (app.zdjecia) {
-            (Array.isArray(app.zdjecia) ? app.zdjecia : [app.zdjecia]).forEach(src => {
-                if (src.startsWith('data:image')) {
-                    const img = document.createElement('img'); img.src = src;
-                    img.onclick = () => window.open(src, '_blank');
+            let fotki = [];
+            if (Array.isArray(app.zdjecia)) {
+                fotki = app.zdjecia;
+            } else if (typeof app.zdjecia === 'string') {
+                fotki = app.zdjecia.includes('|') ? app.zdjecia.split('|') : [app.zdjecia];
+            }
+
+            fotki.forEach(src => {
+                if (src && src.trim().startsWith('data:image')) {
+                    const img = document.createElement('img');
+                    img.src = src.trim();
+                    img.onclick = () => window.open(img.src, '_blank');
                     galeria.appendChild(img);
                 }
             });
         }
         
+        if (galeria.innerHTML === '') {
+            galeria.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Brak przesłanych zdjęć</span>';
+        }
+
         const actionsDiv = document.getElementById('modalActionButtons');
-        actionsDiv.innerHTML = app.status === 'oczekuje' ? 
-            `<button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
-             <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>` : 
-            `<span style="color: var(--text-muted);">Decyzja podjęta: ${app.status}</span>`;
+        actionsDiv.innerHTML = '';
+        if (app.status === 'oczekuje') {
+            actionsDiv.innerHTML = `
+                <button class="btn-decision btn-reject" onclick="changeStatus('${app.id}', 'odrzucone')">Odrzuć</button>
+                <button class="btn-decision btn-accept" onclick="changeStatus('${app.id}', 'zaakceptowane')">Zaakceptuj</button>
+            `;
+        } else {
+            actionsDiv.innerHTML = `<span style="color: var(--text-muted);">Decyzja podjęta. Status: <b style="text-transform:uppercase">${app.status}</b></span>`;
+        }
         document.getElementById('appModal').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('appModal').style.display = 'none'; }
+    function closeModal() { 
+        document.getElementById('appModal').style.display = 'none'; 
+    }
 
     async function changeStatus(id, newStatus) {
-        if (!confirm(`Zmienić status podania #${id} na ${newStatus}?`)) return;
-        const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${savedPassword}` },
-            body: JSON.stringify({ status: newStatus })
-        });
-        if ((await response.json()).success) { alert('Zaktualizowano!'); closeModal(); fetchApplications(); }
+        if (!confirm(`Czy na pewno chcesz zmienić status tego podania na: ${newStatus}?`)) return;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/rekrutacja/${id}`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${savedPassword}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Serwer zwrócił kod błędu ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                alert('Status podania zaktualizowany pomyślnie!');
+                closeModal();
+                fetchApplications();
+            } else {
+                alert('Błąd serwera: ' + result.error);
+            }
+        } catch (error) {
+            alert('Wystąpił błąd zapisu: ' + error.message);
+            console.error(error);
+        }
     }
 </script>
 </body>
